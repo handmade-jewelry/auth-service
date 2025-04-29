@@ -6,15 +6,15 @@ import (
 )
 
 const (
-	jwtTokenSecret     = "auth.jwt_token_secret"
-	authTokenExpMin    = "auth.auth_token_expiry_minutes"
-	refreshTokenExpMin = "auth.refresh_token_expiry_minutes"
-	dbName             = "database.name"
-	dbUser             = "database.user"
-	dbPassword         = "database.password"
-	dbHost             = "database.host"
-	dbPort             = "database.port"
-	sslMode            = "database.sslmode"
+	redisAddress  = "redis.addr"
+	redisPassword = "redis.password"
+	redisDb       = "redis.db"
+	dbName        = "database.name"
+	dbUser        = "database.user"
+	dbPassword    = "database.password"
+	dbHost        = "database.host"
+	dbPort        = "database.port"
+	sslMode       = "database.sslmode"
 )
 
 func initConfig() error {

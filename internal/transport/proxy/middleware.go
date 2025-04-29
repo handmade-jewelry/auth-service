@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"github.com/handmade-jewellery/auth-service/internal/cache"
 	rS "github.com/handmade-jewellery/auth-service/internal/service/resource-service"
 	sS "github.com/handmade-jewellery/auth-service/internal/service/service-service"
 	uS "github.com/handmade-jewellery/auth-service/internal/service/user-service"
@@ -11,6 +12,7 @@ type AuthMiddleware struct {
 	userService     *uS.UserService
 	resourceService *rS.ResourceService
 	serviceService  *sS.ServiceService
+	redis           *cache.RedisClient
 }
 
 func NewAuthMiddleware(userService *uS.UserService, resourceService *rS.ResourceService,

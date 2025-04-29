@@ -3,15 +3,15 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/handmade-jewellery/auth-service/internal/transport/proxy"
-	"github.com/jackc/pgx/v5"
-	"github.com/spf13/viper"
-	"log"
-
+	"github.com/handmade-jewellery/auth-service/internal/cache"
 	rS "github.com/handmade-jewellery/auth-service/internal/service/resource-service"
 	sS "github.com/handmade-jewellery/auth-service/internal/service/service-service"
 	uS "github.com/handmade-jewellery/auth-service/internal/service/user-service"
 	"github.com/handmade-jewellery/auth-service/internal/transport"
+	"github.com/handmade-jewellery/auth-service/internal/transport/proxy"
+	"github.com/jackc/pgx/v5"
+	"github.com/spf13/viper"
+	"log"
 )
 
 type App struct {
@@ -20,6 +20,8 @@ type App struct {
 	serviceService  *sS.ServiceService
 	server          *transport.Server
 	dB              *pgx.Conn
+	redisClient     *cache.RedisClient
+	authMiddleware  *proxy.AuthMiddleware
 }
 
 func NewApp() (*App, error) {
@@ -42,8 +44,10 @@ func (a *App) initDeps() error {
 		return err
 	}
 
+	a.initCache()
 	a.initDb()
 	a.initService()
+	a.initMiddleware()
 	a.initServer()
 
 	return nil
@@ -55,10 +59,19 @@ func (a *App) initService() {
 	a.serviceService = sS.NewService()
 }
 
+func (a *App) initCache() {
+	a.redisClient = cache.NewRedisClient(
+		viper.GetString(redisAddress),
+		viper.GetString(redisPassword),
+		viper.GetInt(redisDb))
+}
+
+func (a *App) initMiddleware() {
+	a.authMiddleware = proxy.NewAuthMiddleware(a.userService, a.resourceService, a.serviceService)
+}
+
 func (a *App) initServer() {
-	authMiddleware := proxy.NewAuthMiddleware(a.userService, a.resourceService, a.serviceService)
-	
-	a.server = transport.NewServer(authMiddleware)
+	a.server = transport.NewServer(a.authMiddleware)
 }
 
 func (a *App) initDb() {
