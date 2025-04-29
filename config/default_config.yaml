@@ -5,3 +5,9 @@ database:
   host: ""
   port: ""
   sslmode: ""
+
+redis:
+  addr: ""
+  password: ""
+  bd: 0
+  key: ""
