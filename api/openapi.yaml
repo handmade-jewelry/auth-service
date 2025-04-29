@@ -1,0 +1,52 @@
+openapi: 3.0.4
+info:
+  title: Authorization service
+  description: Proxy  API
+  version: 0.1.9
+
+servers:
+  - url: https://www.handmadejewellery.com/
+    description: Optional transport description, e.g. Main (production) transport
+
+paths:
+  /:
+    get:
+      summary: Proxy requests
+      description: Check access token and resource roles
+      responses:
+        "200":
+          description: Verification was successful
+        "401":
+          description: User not authenticated
+        "403":
+          description: User is not authorized
+        "404":
+          description: Recourse is not found
+        "405":
+          description: Method not allowed
+
+  /admin/service:
+    get:
+      summary: Returns a list of services
+      description: Returns a list of services
+      responses:
+        "200":
+          description: Successfully retrieved list of services
+    post:
+      summary: Create new service
+      description: Create new service
+      responses:
+        "200":
+          description: Service successfully created
+    put:
+      summary: Update service
+      description: Update service
+      responses:
+        "200":
+          description: Service successfully updated
+    delete:
+      summary: Delete service
+      description: Delete service
+      responses:
+        "200":
+          description: Service successfully deleted
