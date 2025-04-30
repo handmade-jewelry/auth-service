@@ -11,3 +11,11 @@ redis:
   password: ""
   bd: 0
   key: ""
+
+swagger:
+  url_path: ""
+  spec_file_path: ""
+
+server:
+  http:
+    port: ""
