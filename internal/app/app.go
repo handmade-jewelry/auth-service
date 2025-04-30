@@ -10,11 +10,11 @@ import (
 	"github.com/handmade-jewellery/auth-service/internal/transport"
 	"github.com/handmade-jewellery/auth-service/internal/transport/proxy"
 	"github.com/jackc/pgx/v5"
-	"github.com/spf13/viper"
 	"log"
 )
 
 type App struct {
+	cfg             *Config
 	userService     *uS.UserService
 	resourceService *rS.ResourceService
 	serviceService  *sS.ServiceService
@@ -36,16 +36,16 @@ func NewApp() (*App, error) {
 
 func (a *App) Run() error {
 	cfg := &transport.Config{
-		HTTPPort:            viper.GetString(httpServerPort),
-		SwaggerURLPath:      viper.GetString(swaggerURLPath),
-		SwaggerSpecFilePath: viper.GetString(swaggerSpecFilePath),
+		HTTPPort:            a.cfg.HTTPServerPort,
+		SwaggerURLPath:      a.cfg.SwaggerURLPath,
+		SwaggerSpecFilePath: a.cfg.SwaggerSpecFilePath,
 	}
 
 	return a.server.Run(cfg)
 }
 
 func (a *App) initDeps() error {
-	err := initConfig()
+	err := a.initConfig()
 	if err != nil {
 		return err
 	}
@@ -59,6 +59,17 @@ func (a *App) initDeps() error {
 	return nil
 }
 
+func (a *App) initConfig() error {
+	err := loadConfig()
+	if err != nil {
+		return err
+	}
+
+	a.cfg = initConfig()
+
+	return nil
+}
+
 func (a *App) initService() {
 	a.userService = uS.NewService()
 	a.resourceService = rS.NewService()
@@ -67,9 +78,10 @@ func (a *App) initService() {
 
 func (a *App) initCache() {
 	a.redisClient = cache.NewRedisClient(
-		viper.GetString(redisAddress),
-		viper.GetString(redisPassword),
-		viper.GetInt(redisDb))
+		a.cfg.RedisAddress,
+		a.cfg.RedisPassword,
+		a.cfg.RedisDB,
+	)
 }
 
 func (a *App) initMiddleware() {
@@ -83,12 +95,12 @@ func (a *App) initServer() {
 func (a *App) initDb() {
 	connStr := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
-		viper.GetString(dbUser),
-		viper.GetString(dbPassword),
-		viper.GetString(dbHost),
-		viper.GetUint16(dbPort),
-		viper.GetString(dbName),
-		viper.GetString(sslMode),
+		a.cfg.DBUser,
+		a.cfg.DBPassword,
+		a.cfg.DbHost,
+		a.cfg.DbPort,
+		a.cfg.DBName,
+		a.cfg.SSLMode,
 	)
 
 	var err error
