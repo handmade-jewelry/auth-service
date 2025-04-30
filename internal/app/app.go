@@ -35,7 +35,13 @@ func NewApp() (*App, error) {
 }
 
 func (a *App) Run() error {
-	return a.server.Run()
+	cfg := &transport.Config{
+		HTTPPort:            viper.GetString(httpServerPort),
+		SwaggerURLPath:      viper.GetString(swaggerURLPath),
+		SwaggerSpecFilePath: viper.GetString(swaggerSpecFilePath),
+	}
+
+	return a.server.Run(cfg)
 }
 
 func (a *App) initDeps() error {

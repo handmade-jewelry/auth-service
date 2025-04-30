@@ -6,15 +6,18 @@ import (
 )
 
 const (
-	redisAddress  = "redis.addr"
-	redisPassword = "redis.password"
-	redisDb       = "redis.db"
-	dbName        = "database.name"
-	dbUser        = "database.user"
-	dbPassword    = "database.password"
-	dbHost        = "database.host"
-	dbPort        = "database.port"
-	sslMode       = "database.sslmode"
+	redisAddress        = "redis.addr"
+	redisPassword       = "redis.password"
+	redisDb             = "redis.db"
+	dbName              = "database.name"
+	dbUser              = "database.user"
+	dbPassword          = "database.password"
+	dbHost              = "database.host"
+	dbPort              = "database.port"
+	sslMode             = "database.sslmode"
+	httpServerPort      = "server.http.port"
+	swaggerURLPath      = "swagger.url_path"
+	swaggerSpecFilePath = "swagger.spec_file_path"
 )
 
 func initConfig() error {
