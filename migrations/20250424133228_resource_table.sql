@@ -6,6 +6,8 @@ create table if not exists resource (
     is_active bool default false,
     roles text,
     method varchar(10),
+    check_access_token bool default true,
+    check_roles bool default true,
     created_at timestamp default CURRENT_TIMESTAMP not null,
     updated_at timestamp default CURRENT_TIMESTAMP not null,
     deleted_at timestamp

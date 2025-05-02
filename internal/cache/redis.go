@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-var ctx = context.Background()
-
 type RedisClient struct {
 	client *redis.Client
 }
@@ -22,14 +20,18 @@ func NewRedisClient(addr string, password string, db int) *RedisClient {
 	return &RedisClient{client: rdb}
 }
 
-func (r *RedisClient) Set(key string, value string, ttl time.Duration) error {
+func (r *RedisClient) Set(ctx context.Context, key string, value string, ttl time.Duration) error {
 	return r.client.Set(ctx, key, value, ttl).Err()
 }
 
-func (r *RedisClient) Get(key string) (string, error) {
+func (r *RedisClient) Get(ctx context.Context, key string) (string, error) {
 	return r.client.Get(ctx, key).Result()
 }
 
-func (r *RedisClient) Delete(key string) error {
+func (r *RedisClient) GetBytes(ctx context.Context, key string) ([]byte, error) {
+	return r.client.Get(ctx, key).Bytes()
+}
+
+func (r *RedisClient) Delete(ctx context.Context, key string) error {
 	return r.client.Del(ctx, key).Err()
 }

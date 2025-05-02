@@ -1,19 +1,19 @@
-package resource_service
+package resource
 
 import (
 	"context"
 )
 
-type ResourceService struct {
+type Service struct {
 	//todo
 	//repo
 }
 
-func NewService() *ResourceService {
-	return &ResourceService{}
+func NewService() *Service {
+	return &Service{}
 }
 
-func (r *ResourceService) GetRouteByPath(ctx context.Context, path string) (*Resource, error) {
+func (r *Service) GetRouteByPath(ctx context.Context, path string) (*Resource, error) {
 	//todo stub
 	route := Resource{
 		ID:        1,

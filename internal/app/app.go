@@ -3,25 +3,30 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/handmade-jewellery/auth-service/internal/cache"
-	rS "github.com/handmade-jewellery/auth-service/internal/service/resource-service"
-	sS "github.com/handmade-jewellery/auth-service/internal/service/service-service"
-	uS "github.com/handmade-jewellery/auth-service/internal/service/user-service"
-	"github.com/handmade-jewellery/auth-service/internal/transport"
-	"github.com/handmade-jewellery/auth-service/internal/transport/proxy"
+	"github.com/handmade-jewelry/auth-service/internal/cache"
+	"github.com/handmade-jewelry/auth-service/internal/config"
+	"github.com/handmade-jewelry/auth-service/internal/jwt"
+	resourceService "github.com/handmade-jewelry/auth-service/internal/service/resource"
+	serviceService "github.com/handmade-jewelry/auth-service/internal/service/service"
+	userService "github.com/handmade-jewelry/auth-service/internal/service/user"
+	"github.com/handmade-jewelry/auth-service/internal/transport"
+	"github.com/handmade-jewelry/auth-service/internal/transport/proxy"
 	"github.com/jackc/pgx/v5"
+	"github.com/spf13/viper"
 	"log"
+	"time"
 )
 
 type App struct {
-	cfg             *Config
-	userService     *uS.UserService
-	resourceService *rS.ResourceService
-	serviceService  *sS.ServiceService
-	server          *transport.Server
-	dB              *pgx.Conn
+	cfg             *config.Config
+	userService     *userService.Service
+	resourceService *resourceService.Service
+	serviceService  *serviceService.Service
 	redisClient     *cache.RedisClient
 	authMiddleware  *proxy.AuthMiddleware
+	jwtService      *jwt.Service
+	server          *transport.Server
+	dB              *pgx.Conn
 }
 
 func NewApp() (*App, error) {
@@ -44,6 +49,7 @@ func (a *App) Run() error {
 	return a.server.Run(cfg)
 }
 
+// todo
 func (a *App) initDeps() error {
 	err := a.initConfig()
 	if err != nil {
@@ -51,8 +57,19 @@ func (a *App) initDeps() error {
 	}
 
 	a.initCache()
+
+	err = a.initJWTService()
+	if err != nil {
+		return err
+	}
+
 	a.initDb()
-	a.initService()
+
+	err = a.initService()
+	if err != nil {
+		return err
+	}
+
 	a.initMiddleware()
 	a.initServer()
 
@@ -60,20 +77,64 @@ func (a *App) initDeps() error {
 }
 
 func (a *App) initConfig() error {
-	err := loadConfig()
+	err := config.LoadConfig()
 	if err != nil {
 		return err
 	}
 
-	a.cfg = initConfig()
+	a.cfg = &config.Config{
+		DBName:              viper.GetString(config.DbName),
+		DBUser:              viper.GetString(config.DbUser),
+		DBPassword:          viper.GetString(config.DbPassword),
+		DbHost:              viper.GetString(config.DbHost),
+		DbPort:              viper.GetUint16(config.DbPort),
+		SSLMode:             viper.GetString(config.SslMode),
+		HTTPServerPort:      viper.GetString(config.HttpServerPort),
+		SwaggerURLPath:      viper.GetString(config.SwaggerURLPath),
+		SwaggerSpecFilePath: viper.GetString(config.SwaggerSpecFilePath),
+		RedisAddress:        viper.GetString(config.RedisAddress),
+		RedisPassword:       viper.GetString(config.RedisPassword),
+		RedisDB:             viper.GetInt(config.RedisDb),
+	}
 
 	return nil
 }
 
-func (a *App) initService() {
-	a.userService = uS.NewService()
-	a.resourceService = rS.NewService()
-	a.serviceService = sS.NewService()
+func (a *App) initJWTService() error {
+	accessTokenExp, err := time.ParseDuration(viper.GetString(config.AccessTokenExpMin))
+	if err != nil {
+		log.Fatalf("Ошибка при парсинге длительности auth: %v", err)
+		return err
+	}
+
+	refreshTokenExp, err := time.ParseDuration(viper.GetString(config.RefreshTokenExpMin))
+	if err != nil {
+		log.Fatalf("Ошибка при парсинге длительности refresh: %v", err)
+		return err
+	}
+
+	a.jwtService = jwt.NewService(viper.GetString(config.JWTTokenSecret), accessTokenExp, refreshTokenExp)
+
+	return nil
+}
+
+func (a *App) initService() error {
+	grpcOpts := config.GRPCOptions{
+		Host:            viper.GetString(config.UserServiceHost),
+		MaxRetry:        viper.GetUint(config.GRPCClientMaxRetry),
+		PerRetryTimeout: viper.GetDuration(config.GRPCClientRetryTimeout),
+	}
+
+	var err error
+	a.userService, err = userService.NewService(&grpcOpts)
+	if err != nil {
+		return err
+	}
+
+	a.resourceService = resourceService.NewService()
+	a.serviceService = serviceService.NewService()
+
+	return nil
 }
 
 func (a *App) initCache() {
@@ -85,7 +146,7 @@ func (a *App) initCache() {
 }
 
 func (a *App) initMiddleware() {
-	a.authMiddleware = proxy.NewAuthMiddleware(a.userService, a.resourceService, a.serviceService)
+	a.authMiddleware = proxy.NewAuthMiddleware(a.userService, a.resourceService, a.serviceService, a.jwtService, a.redisClient)
 }
 
 func (a *App) initServer() {

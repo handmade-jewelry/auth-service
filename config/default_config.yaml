@@ -1,3 +1,4 @@
+# PostgreSQL database
 database:
   name: ""
   user: ""
@@ -6,16 +7,33 @@ database:
   port: ""
   sslmode: ""
 
+# JWT Token
+jwt:
+  token_secret:
+  access_token_expiry_minutes:
+  refresh_token_expiry_minutes:
+
+# Redis
 redis:
   addr: ""
   password: ""
   bd: 0
   key: ""
 
+# Swagger UI
 swagger:
   url_path: ""
   spec_file_path: ""
 
+# HTTP server
 server:
   http:
     port: ""
+
+# GRPC client
+grpc_client:
+  max_retry:
+  timeout_per_retry:
+
+user_service:
+  host:

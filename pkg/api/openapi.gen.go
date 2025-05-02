@@ -12,9 +12,6 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Proxy requests
-	// (GET /)
-	Get(w http.ResponseWriter, r *http.Request)
 	// Delete service
 	// (DELETE /admin/service)
 	DeleteAdminService(w http.ResponseWriter, r *http.Request)
@@ -27,17 +24,17 @@ type ServerInterface interface {
 	// Update service
 	// (PUT /admin/service)
 	PutAdminService(w http.ResponseWriter, r *http.Request)
+	// Login user
+	// (POST /login)
+	PostLogin(w http.ResponseWriter, r *http.Request)
+	// Refresh access token
+	// (GET /refresh-token)
+	GetRefreshToken(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
-
-// Proxy requests
-// (GET /)
-func (_ Unimplemented) Get(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
 
 // Delete service
 // (DELETE /admin/service)
@@ -63,6 +60,18 @@ func (_ Unimplemented) PutAdminService(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Login user
+// (POST /login)
+func (_ Unimplemented) PostLogin(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Refresh access token
+// (GET /refresh-token)
+func (_ Unimplemented) GetRefreshToken(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler            ServerInterface
@@ -72,21 +81,7 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// Get operation proxy
-func (siw *ServerInterfaceWrapper) Get(w http.ResponseWriter, r *http.Request) {
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.Get(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// DeleteAdminService operation proxy
+// DeleteAdminService operation middleware
 func (siw *ServerInterfaceWrapper) DeleteAdminService(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -100,7 +95,7 @@ func (siw *ServerInterfaceWrapper) DeleteAdminService(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
-// GetAdminService operation proxy
+// GetAdminService operation middleware
 func (siw *ServerInterfaceWrapper) GetAdminService(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -114,7 +109,7 @@ func (siw *ServerInterfaceWrapper) GetAdminService(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
-// PostAdminService operation proxy
+// PostAdminService operation middleware
 func (siw *ServerInterfaceWrapper) PostAdminService(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -128,11 +123,39 @@ func (siw *ServerInterfaceWrapper) PostAdminService(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
-// PutAdminService operation proxy
+// PutAdminService operation middleware
 func (siw *ServerInterfaceWrapper) PutAdminService(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutAdminService(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostLogin operation middleware
+func (siw *ServerInterfaceWrapper) PostLogin(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostLogin(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRefreshToken operation middleware
+func (siw *ServerInterfaceWrapper) GetRefreshToken(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRefreshToken(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -256,9 +279,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/", wrapper.Get)
-	})
-	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/admin/service", wrapper.DeleteAdminService)
 	})
 	r.Group(func(r chi.Router) {
@@ -269,6 +289,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/admin/service", wrapper.PutAdminService)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/login", wrapper.PostLogin)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/refresh-token", wrapper.GetRefreshToken)
 	})
 
 	return r

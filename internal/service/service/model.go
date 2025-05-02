@@ -1,8 +1,9 @@
-package service_service
+package service
 
 import "time"
 
-type Service struct {
+// todo rename
+type ServiceModel struct {
 	Id        int
 	Name      string
 	IsActive  bool

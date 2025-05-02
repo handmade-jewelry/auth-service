@@ -1,4 +1,4 @@
-package user_service
+package user
 
 type RoleName string
 
@@ -16,7 +16,7 @@ type Role struct {
 	//DeletedAT time.Time todo нужно ли
 }
 
-type User struct {
-	ID    int
-	Roles []RoleName
+type UserRoles struct {
+	UserID int
+	Roles  []string
 }
