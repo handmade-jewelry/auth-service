@@ -1,7 +1,7 @@
 package main
 
 import (
-	app "github.com/handmade-jewellery/auth-service/internal/app"
+	"github.com/handmade-jewelry/auth-service/internal/app"
 	"log"
 )
 

@@ -3,9 +3,9 @@ package transport
 import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/handmade-jewellery/auth-service/internal/transport/handler"
-	"github.com/handmade-jewellery/auth-service/internal/transport/proxy"
-	"github.com/handmade-jewellery/auth-service/pkg/api"
+	"github.com/handmade-jewelry/auth-service/internal/transport/handler"
+	"github.com/handmade-jewelry/auth-service/internal/transport/proxy"
+	"github.com/handmade-jewelry/auth-service/pkg/api"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"log"
 	"net/http"

@@ -9,21 +9,25 @@ servers:
     description: Optional transport description, e.g. Main (production) transport
 
 paths:
-  /:
-    get:
-      summary: Proxy requests
-      description: Check access token and resource roles
+  /login:
+    post:
+      summary: Login user
+      description: Authenticates user by login and password.
       responses:
         "200":
-          description: Verification was successful
+          description: Successful authentication
+        "400":
+          description: Invalid data
+
+  /refresh-token:
+    get:
+      summary: Refresh access token
+      description: Refresh access token by refresh token
+      responses:
+        "200":
+          description: Refresh successfully
         "401":
-          description: User not authenticated
-        "403":
-          description: User is not authorized
-        "404":
-          description: Recourse is not found
-        "405":
-          description: Method not allowed
+          description: User unauthorized
 
   /admin/service:
     get:
