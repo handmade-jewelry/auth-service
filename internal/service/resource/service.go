@@ -2,26 +2,19 @@ package resource
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Service struct {
-	//todo
-	//repo
+	repo *repository
 }
 
-func NewService() *Service {
-	return &Service{}
-}
-
-func (r *Service) GetRouteByPath(ctx context.Context, path string) (*Resource, error) {
-	//todo stub
-	route := Resource{
-		ID:        1,
-		ServiceID: 2,
-		Path:      "/items",
-		Roles:     []string{"CUSTOMER_ROLE"},
-		IsActive:  true,
+func NewService(dbPool *pgxpool.Pool) *Service {
+	return &Service{
+		repo: newRepository(dbPool),
 	}
+}
 
-	return &route, nil
+func (s *Service) GetResourceByPath(ctx context.Context, path string) (*Resource, error) {
+	return s.repo.getResource(ctx, path)
 }

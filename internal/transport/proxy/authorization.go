@@ -68,7 +68,7 @@ func (a *AuthMiddleware) getResource(ctx context.Context, path string) (*resourc
 	//todo log redis err
 
 	//try to get from bd
-	resource, err = a.resourceService.GetRouteByPath(ctx, path)
+	resource, err = a.resourceService.GetResourceByPath(ctx, path)
 	if err != nil {
 		return nil, err
 	}

@@ -5,7 +5,10 @@ database:
   password: ""
   host: ""
   port: ""
-  sslmode: ""
+  ssl_mode: ""
+  max_cons:
+  min_cons:
+  max_conn_lifetime:
 
 # JWT Token
 jwt:
