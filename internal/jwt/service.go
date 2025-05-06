@@ -6,10 +6,6 @@ import (
 	"time"
 )
 
-const (
-	RefreshTokenPrefix = "refresh_token:"
-)
-
 type Claims struct {
 	UserID int
 	Roles  []string

@@ -11,7 +11,7 @@ import (
 	userService "github.com/handmade-jewelry/auth-service/internal/service/user"
 	"github.com/handmade-jewelry/auth-service/internal/transport"
 	"github.com/handmade-jewelry/auth-service/internal/transport/proxy"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"log"
 	"time"
@@ -26,12 +26,12 @@ type App struct {
 	authMiddleware  *proxy.AuthMiddleware
 	jwtService      *jwt.Service
 	server          *transport.Server
-	dB              *pgx.Conn
+	dBPool          *pgxpool.Pool
 }
 
-func NewApp() (*App, error) {
+func NewApp(ctx context.Context) (*App, error) {
 	a := &App{}
-	err := a.initDeps()
+	err := a.initDeps(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -50,20 +50,19 @@ func (a *App) Run() error {
 }
 
 // todo
-func (a *App) initDeps() error {
+func (a *App) initDeps(ctx context.Context) error {
 	err := a.initConfig()
 	if err != nil {
 		return err
 	}
 
 	a.initCache()
+	a.initJWTService()
 
-	err = a.initJWTService()
+	err = a.initDb(ctx)
 	if err != nil {
 		return err
 	}
-
-	a.initDb()
 
 	err = a.initService()
 	if err != nil {
@@ -82,40 +81,50 @@ func (a *App) initConfig() error {
 		return err
 	}
 
-	a.cfg = &config.Config{
-		DBName:              viper.GetString(config.DbName),
-		DBUser:              viper.GetString(config.DbUser),
-		DBPassword:          viper.GetString(config.DbPassword),
-		DbHost:              viper.GetString(config.DbHost),
-		DbPort:              viper.GetUint16(config.DbPort),
-		SSLMode:             viper.GetString(config.SslMode),
-		HTTPServerPort:      viper.GetString(config.HttpServerPort),
-		SwaggerURLPath:      viper.GetString(config.SwaggerURLPath),
-		SwaggerSpecFilePath: viper.GetString(config.SwaggerSpecFilePath),
-		RedisAddress:        viper.GetString(config.RedisAddress),
-		RedisPassword:       viper.GetString(config.RedisPassword),
-		RedisDB:             viper.GetInt(config.RedisDb),
+	dBMaxConLifetime, err := time.ParseDuration(viper.GetString(config.DBMaxConLifetime))
+	if err != nil {
+		log.Fatalf("Failed to parse dBPool max conns lifetime duration config: %v", err)
+		return err
 	}
 
-	return nil
-}
-
-func (a *App) initJWTService() error {
 	accessTokenExp, err := time.ParseDuration(viper.GetString(config.AccessTokenExpMin))
 	if err != nil {
-		log.Fatalf("Ошибка при парсинге длительности auth: %v", err)
+		log.Fatalf("Failed to parse access token exp config: %v", err)
 		return err
 	}
 
 	refreshTokenExp, err := time.ParseDuration(viper.GetString(config.RefreshTokenExpMin))
 	if err != nil {
-		log.Fatalf("Ошибка при парсинге длительности refresh: %v", err)
+		log.Fatalf("Failed to parse refresh token exp config: %v", err)
 		return err
 	}
 
-	a.jwtService = jwt.NewService(viper.GetString(config.JWTTokenSecret), accessTokenExp, refreshTokenExp)
+	a.cfg = &config.Config{
+		DBName:              viper.GetString(config.DBName),
+		DBUser:              viper.GetString(config.DBUser),
+		DBPassword:          viper.GetString(config.DBPassword),
+		DbHost:              viper.GetString(config.DBHost),
+		DbPort:              viper.GetUint16(config.DBPort),
+		SSLMode:             viper.GetString(config.SSLMode),
+		DBMaxCons:           viper.GetInt32(config.DBMaxCons),
+		DBMinCons:           viper.GetInt32(config.DBMinCons),
+		DBMaxConLifetime:    dBMaxConLifetime,
+		HTTPServerPort:      viper.GetString(config.HTTPServerPort),
+		SwaggerURLPath:      viper.GetString(config.SwaggerURLPath),
+		SwaggerSpecFilePath: viper.GetString(config.SwaggerSpecFilePath),
+		RedisAddress:        viper.GetString(config.RedisAddress),
+		RedisPassword:       viper.GetString(config.RedisPassword),
+		RedisDB:             viper.GetInt(config.RedisDb),
+		AccessTokenExp:      accessTokenExp,
+		RefreshTokenExp:     refreshTokenExp,
+		JWTTokenSecret:      viper.GetString(config.JWTTokenSecret),
+	}
 
 	return nil
+}
+
+func (a *App) initJWTService() {
+	a.jwtService = jwt.NewService(a.cfg.JWTTokenSecret, a.cfg.AccessTokenExp, a.cfg.RefreshTokenExp)
 }
 
 func (a *App) initService() error {
@@ -131,7 +140,7 @@ func (a *App) initService() error {
 		return err
 	}
 
-	a.resourceService = resourceService.NewService()
+	a.resourceService = resourceService.NewService(a.dBPool)
 	a.serviceService = serviceService.NewService()
 
 	return nil
@@ -153,7 +162,7 @@ func (a *App) initServer() {
 	a.server = transport.NewServer(a.authMiddleware)
 }
 
-func (a *App) initDb() {
+func (a *App) initDb(ctx context.Context) error {
 	connStr := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		a.cfg.DBUser,
@@ -164,16 +173,30 @@ func (a *App) initDb() {
 		a.cfg.SSLMode,
 	)
 
-	var err error
-	a.dB, err = pgx.Connect(context.Background(), connStr)
+	cfg, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v\n", err)
+		//todo log error
+		return fmt.Errorf("failed to parse db config: %w", err)
 	}
 
-	err = a.dB.Ping(context.Background())
+	cfg.MaxConns = a.cfg.DBMaxCons
+	cfg.MinConns = a.cfg.DBMinCons
+	cfg.MaxConnLifetime = a.cfg.DBMaxConLifetime
+
+	dbPool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
-		log.Fatalf("Unable to ping the database: %v\n", err)
+		//todo log error
+		return fmt.Errorf("unable to create pool: %w", err)
 	}
+
+	if err = dbPool.Ping(ctx); err != nil {
+		//todo log error
+		return fmt.Errorf("failed to ping db: %w", err)
+	}
+
+	a.dBPool = dbPool
 
 	log.Println("Database connection established successfully")
+
+	return nil
 }

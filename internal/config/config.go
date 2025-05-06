@@ -3,16 +3,20 @@ package config
 import (
 	"fmt"
 	"github.com/spf13/viper"
+	"time"
 )
 
 const (
-	DbName                 = "database.name"
-	DbUser                 = "database.user"
-	DbPassword             = "database.password"
-	DbHost                 = "database.host"
-	DbPort                 = "database.port"
-	SslMode                = "database.sslmode"
-	HttpServerPort         = "server.http.port"
+	DBName                 = "database.name"
+	DBUser                 = "database.user"
+	DBPassword             = "database.password"
+	DBHost                 = "database.host"
+	DBPort                 = "database.port"
+	SSLMode                = "database.ssl_mode"
+	DBMaxCons              = "database.max_cons"
+	DBMinCons              = "database.min_cons"
+	DBMaxConLifetime       = "database.max_con_lifetime"
+	HTTPServerPort         = "server.http.port"
 	SwaggerURLPath         = "swagger.url_path"
 	SwaggerSpecFilePath    = "swagger.spec_file_path"
 	RedisAddress           = "redis.addr"
@@ -33,12 +37,18 @@ type Config struct {
 	DbHost              string
 	DbPort              uint16
 	SSLMode             string
+	DBMaxCons           int32
+	DBMinCons           int32
+	DBMaxConLifetime    time.Duration
 	HTTPServerPort      string
 	SwaggerURLPath      string
 	SwaggerSpecFilePath string
 	RedisAddress        string
 	RedisPassword       string
 	RedisDB             int
+	AccessTokenExp      time.Duration
+	RefreshTokenExp     time.Duration
+	JWTTokenSecret      string
 }
 
 func LoadConfig() error {
