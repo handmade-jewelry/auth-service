@@ -8,13 +8,13 @@ database:
   ssl_mode: ""
   max_cons:
   min_cons:
-  max_conn_lifetime:
+  max_conn_lifetime: ""
 
 # JWT Token
 jwt:
-  token_secret:
-  access_token_expiry_minutes:
-  refresh_token_expiry_minutes:
+  token_secret: ""
+  access_token_expiry_minutes: ""
+  refresh_token_expiry_minutes: ""
 
 # Redis
 redis:
@@ -22,6 +22,10 @@ redis:
   password: ""
   bd: 0
   key: ""
+
+# Worker
+refresh_resources_ttl: ""
+refresh_resources_interval: ""
 
 # Swagger UI
 swagger:
@@ -36,7 +40,7 @@ server:
 # GRPC client
 grpc_client:
   max_retry:
-  timeout_per_retry:
+  timeout_per_retry: ""
 
 user_service:
-  host:
+  host: ""

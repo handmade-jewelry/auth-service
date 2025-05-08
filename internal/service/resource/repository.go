@@ -41,3 +41,25 @@ func (r *repository) getResource(ctx context.Context, path string) (*Resource, e
 	}
 	return &resource, nil
 }
+
+func (r *repository) getResourceByServiceIDs(ctx context.Context, ids []int) ([]*Resource, error) {
+	query, args, err := queryBuilder.
+		Select("*").
+		From("resource").
+		Where(squirrel.Eq{"service_id": ids}).
+		Where(squirrel.Eq{"is_active": true}).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var resources []*Resource
+	err = pgxscan.Get(ctx, r.dbPool, &resources, query, args...)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return resources, nil
+}

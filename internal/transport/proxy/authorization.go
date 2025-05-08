@@ -2,78 +2,60 @@ package proxy
 
 import (
 	"context"
-	"encoding/json"
-	resourceService "github.com/handmade-jewelry/auth-service/internal/service/resource"
+	"github.com/pkg/errors"
 	"net/http"
+
+	routeService "github.com/handmade-jewelry/auth-service/internal/service/route"
 )
 
 const (
 	accessTokenCookie = "access_token"
 )
 
-func (a *AuthMiddleware) checkAuth(ctx context.Context, req *http.Request) error {
-	// get path
+func (a *AuthMiddleware) checkAuth(ctx context.Context, req *http.Request) (*routeService.Route, error) {
 	path := req.URL.Path
 
-	// get handler from redis by path
-	resource, err := a.getResource(ctx, path)
+	route, err := a.routeService.GetRouteByPath(ctx, path)
 	if err != nil {
-		//todo error
+		//todo log error
+		return nil, err
 	}
 
-	// check is_active and deleted_at handler parameters
-	if !resource.IsActive && resource.DeletedAt != nil {
-		//todo error
+	if route == nil {
+		return nil, errors.New("route not found")
 	}
 
-	if !resource.CheckAccessToken {
-		return nil
+	if !route.CheckAccessToken {
+		return route, nil
 	}
 
-	// try to get token from cookies and validate
 	token, err := a.getAccessToken(req)
 	if err != nil {
-		//todo
+		//todo log
+		return nil, err
 	}
 
-	// parse token and check sign
 	claims, err := a.jwtService.ParseAuthToken(token)
 	if err != nil {
-		//todo
+		//todo log
+		return nil, err
 	}
 
 	if claims.IsExpired() {
 		//todo error
+		return nil, errors.New("token is expired")
 	}
 
-	// compare user roles from token with roles from service_handler
-	isMatch := a.checkRoles(resource.Roles, claims.Roles)
-	if !isMatch {
+	if !route.CheckRoles {
+		return route, nil
+	}
+
+	if !a.checkRoles(route.Roles, claims.Roles) {
 		//todo error access denied
+		return nil, errors.New("access denied")
 	}
 
-	return nil
-}
-
-func (a *AuthMiddleware) getResource(ctx context.Context, path string) (*resourceService.Resource, error) {
-	var resource *resourceService.Resource
-	resourceJsn, err := a.redisClient.Get(ctx, path)
-	if err == nil {
-		err = json.Unmarshal([]byte(resourceJsn), &resource)
-		if err == nil {
-			return resource, nil
-		}
-	}
-
-	//todo log redis err
-
-	//try to get from bd
-	resource, err = a.resourceService.GetResourceByPath(ctx, path)
-	if err != nil {
-		return nil, err
-	}
-
-	return resource, nil
+	return route, nil
 }
 
 func (a *AuthMiddleware) getAccessToken(req *http.Request) (string, error) {

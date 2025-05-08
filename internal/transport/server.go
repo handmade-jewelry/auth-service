@@ -40,6 +40,7 @@ func (s *Server) Run(cfg *Config) error {
 
 	err := http.ListenAndServe(cfg.HTTPPort, s.router)
 	if err != nil {
+		//todo
 		log.Printf("Error starting server: %v\n", err)
 		return err
 	}
