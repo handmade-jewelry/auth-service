@@ -10,6 +10,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/handmade-jewelry/user-service/pkg/api/user-service v0.0.0-20250501111624-ff8b23e38c58
 	github.com/jackc/pgx/v5 v5.7.4
+	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/v9 v9.8.0
 	github.com/spf13/viper v1.20.1
 	github.com/swaggo/http-swagger v1.3.4

@@ -3,6 +3,13 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/handmade-jewelry/auth-service/internal/service/route"
+	"log"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/spf13/viper"
+
 	"github.com/handmade-jewelry/auth-service/internal/cache"
 	"github.com/handmade-jewelry/auth-service/internal/config"
 	"github.com/handmade-jewelry/auth-service/internal/jwt"
@@ -11,22 +18,21 @@ import (
 	userService "github.com/handmade-jewelry/auth-service/internal/service/user"
 	"github.com/handmade-jewelry/auth-service/internal/transport"
 	"github.com/handmade-jewelry/auth-service/internal/transport/proxy"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/spf13/viper"
-	"log"
-	"time"
+	resourceRefresh "github.com/handmade-jewelry/auth-service/internal/worker/resource-refresh"
 )
 
 type App struct {
-	cfg             *config.Config
-	userService     *userService.Service
-	resourceService *resourceService.Service
-	serviceService  *serviceService.Service
-	redisClient     *cache.RedisClient
-	authMiddleware  *proxy.AuthMiddleware
-	jwtService      *jwt.Service
-	server          *transport.Server
-	dBPool          *pgxpool.Pool
+	cfg                   *config.Config
+	userService           *userService.Service
+	resourceService       *resourceService.Service
+	serviceService        *serviceService.Service
+	routeService          *route.Service
+	redisClient           *cache.RedisClient
+	authMiddleware        *proxy.AuthMiddleware
+	jwtService            *jwt.Service
+	server                *transport.Server
+	dBPool                *pgxpool.Pool
+	refreshResourceTicker *resourceRefresh.Ticker
 }
 
 func NewApp(ctx context.Context) (*App, error) {
@@ -39,12 +45,14 @@ func NewApp(ctx context.Context) (*App, error) {
 	return a, nil
 }
 
-func (a *App) Run() error {
+func (a *App) Run(ctx context.Context) error {
 	cfg := &transport.Config{
 		HTTPPort:            a.cfg.HTTPServerPort,
 		SwaggerURLPath:      a.cfg.SwaggerURLPath,
 		SwaggerSpecFilePath: a.cfg.SwaggerSpecFilePath,
 	}
+
+	a.runWorker(ctx)
 
 	return a.server.Run(cfg)
 }
@@ -71,6 +79,7 @@ func (a *App) initDeps(ctx context.Context) error {
 
 	a.initMiddleware()
 	a.initServer()
+	a.initWorker()
 
 	return nil
 }
@@ -99,25 +108,39 @@ func (a *App) initConfig() error {
 		return err
 	}
 
+	refreshResourceTTL, err := time.ParseDuration(viper.GetString(config.RefreshResourceTTL))
+	if err != nil {
+		log.Fatalf("Failed to parse refresh token exp config: %v", err)
+		return err
+	}
+
+	refreshResourcesInterval, err := time.ParseDuration(viper.GetString(config.RefreshResourcesInterval))
+	if err != nil {
+		log.Fatalf("Failed to parse refresh token exp config: %v", err)
+		return err
+	}
+
 	a.cfg = &config.Config{
-		DBName:              viper.GetString(config.DBName),
-		DBUser:              viper.GetString(config.DBUser),
-		DBPassword:          viper.GetString(config.DBPassword),
-		DbHost:              viper.GetString(config.DBHost),
-		DbPort:              viper.GetUint16(config.DBPort),
-		SSLMode:             viper.GetString(config.SSLMode),
-		DBMaxCons:           viper.GetInt32(config.DBMaxCons),
-		DBMinCons:           viper.GetInt32(config.DBMinCons),
-		DBMaxConLifetime:    dBMaxConLifetime,
-		HTTPServerPort:      viper.GetString(config.HTTPServerPort),
-		SwaggerURLPath:      viper.GetString(config.SwaggerURLPath),
-		SwaggerSpecFilePath: viper.GetString(config.SwaggerSpecFilePath),
-		RedisAddress:        viper.GetString(config.RedisAddress),
-		RedisPassword:       viper.GetString(config.RedisPassword),
-		RedisDB:             viper.GetInt(config.RedisDb),
-		AccessTokenExp:      accessTokenExp,
-		RefreshTokenExp:     refreshTokenExp,
-		JWTTokenSecret:      viper.GetString(config.JWTTokenSecret),
+		DBName:                  viper.GetString(config.DBName),
+		DBUser:                  viper.GetString(config.DBUser),
+		DBPassword:              viper.GetString(config.DBPassword),
+		DbHost:                  viper.GetString(config.DBHost),
+		DbPort:                  viper.GetUint16(config.DBPort),
+		SSLMode:                 viper.GetString(config.SSLMode),
+		DBMaxCons:               viper.GetInt32(config.DBMaxCons),
+		DBMinCons:               viper.GetInt32(config.DBMinCons),
+		DBMaxConLifetime:        dBMaxConLifetime,
+		HTTPServerPort:          viper.GetString(config.HTTPServerPort),
+		SwaggerURLPath:          viper.GetString(config.SwaggerURLPath),
+		SwaggerSpecFilePath:     viper.GetString(config.SwaggerSpecFilePath),
+		RedisAddress:            viper.GetString(config.RedisAddress),
+		RedisPassword:           viper.GetString(config.RedisPassword),
+		RedisDB:                 viper.GetInt(config.RedisDb),
+		AccessTokenExp:          accessTokenExp,
+		RefreshTokenExp:         refreshTokenExp,
+		JWTTokenSecret:          viper.GetString(config.JWTTokenSecret),
+		RefreshResourceTTL:      refreshResourceTTL,
+		RefreshResourceInterval: refreshResourcesInterval,
 	}
 
 	return nil
@@ -141,7 +164,8 @@ func (a *App) initService() error {
 	}
 
 	a.resourceService = resourceService.NewService(a.dBPool)
-	a.serviceService = serviceService.NewService()
+	a.serviceService = serviceService.NewService(a.dBPool)
+	a.routeService = route.NewService(a.dBPool, a.redisClient)
 
 	return nil
 }
@@ -155,7 +179,7 @@ func (a *App) initCache() {
 }
 
 func (a *App) initMiddleware() {
-	a.authMiddleware = proxy.NewAuthMiddleware(a.userService, a.resourceService, a.serviceService, a.jwtService, a.redisClient)
+	a.authMiddleware = proxy.NewAuthMiddleware(a.userService, a.routeService, a.jwtService)
 }
 
 func (a *App) initServer() {
@@ -199,4 +223,12 @@ func (a *App) initDb(ctx context.Context) error {
 	log.Println("Database connection established successfully")
 
 	return nil
+}
+
+func (a *App) initWorker() {
+	a.refreshResourceTicker = resourceRefresh.NewTiker(a.routeService)
+}
+
+func (a *App) runWorker(ctx context.Context) {
+	a.refreshResourceTicker.Run(ctx, a.cfg.RefreshResourceInterval, a.cfg.RefreshResourceTTL)
 }

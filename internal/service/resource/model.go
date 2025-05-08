@@ -7,6 +7,7 @@ type Resource struct {
 	ServiceID        int
 	Path             string
 	Method           string
+	Scheme           string
 	Roles            []string
 	IsActive         bool
 	CheckAccessToken bool

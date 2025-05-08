@@ -1,26 +1,15 @@
 package service
 
-import "context"
+import (
+	"github.com/jackc/pgx/v5/pgxpool"
+)
 
 type Service struct {
+	repo *repository
 }
 
-func NewService() *Service {
-	return &Service{}
-}
-
-func (s *Service) GetService(ctx context.Context, id int) (*Service, error) {
-	return &Service{}, nil
-}
-
-func (s *Service) CreateService() {
-
-}
-
-func (s *Service) UpdateService() {
-
-}
-
-func (s *Service) DeleteService() {
-
+func NewService(dbPool *pgxpool.Pool) *Service {
+	return &Service{
+		repo: newRepository(dbPool),
+	}
 }

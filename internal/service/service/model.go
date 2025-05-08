@@ -2,7 +2,6 @@ package service
 
 import "time"
 
-// todo rename
 type ServiceModel struct {
 	Id        int
 	Name      string

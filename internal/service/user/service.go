@@ -2,11 +2,13 @@ package user
 
 import (
 	"context"
+
 	grpcRetry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/handmade-jewelry/auth-service/internal/config"
-	userService "github.com/handmade-jewelry/user-service/pkg/api/user-service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/handmade-jewelry/auth-service/internal/config"
+	userService "github.com/handmade-jewelry/user-service/pkg/api/user-service"
 )
 
 type Service struct {
