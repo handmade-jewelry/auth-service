@@ -1,6 +1,6 @@
 -- +goose Up
 create table if not exists service (
-    id serial primary,
+    id serial primary key,
     name varchar(255) not null,
     is_active boolean default false,
     host varchar(255) not null,

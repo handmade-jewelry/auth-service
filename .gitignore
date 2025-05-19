@@ -1,1 +1,6 @@
+# IDE
+/.idea
+*.iml
+
+# Config
 /config/config.yaml
