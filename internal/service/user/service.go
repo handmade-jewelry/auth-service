@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"github.com/handmade-jewelry/auth-service/logger"
 
 	grpcRetry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
@@ -25,7 +26,7 @@ func NewService(opts *config.GRPCOptions) (*Service, error) {
 			),
 		))
 	if err != nil {
-		//todo  log
+		logger.Error("failed to create grpc client", err)
 		return nil, err
 	}
 
@@ -34,9 +35,19 @@ func NewService(opts *config.GRPCOptions) (*Service, error) {
 	}, nil
 }
 
-func (u *Service) GetUserRoles(ctx context.Context, userID int64) ([]string, error) {
+func (u *Service) UserRoles(ctx context.Context, userID int64) ([]string, error) {
 	//todo stub
 	return []string{"CUSTOMER"}, nil
+}
+
+func (u *Service) RoleList(ctx context.Context) ([]string, error) {
+	//todo stub
+	return []string{"CUSTOMER", "ADMIN", "SELLER"}, nil
+}
+
+func (u *Service) CheckRoles(ctx context.Context, roles []string) ([]string, error) {
+	//todo stub
+	return roles, nil
 }
 
 func (u *Service) Login(ctx context.Context, email, password string) (*UserWithRoles, error) {

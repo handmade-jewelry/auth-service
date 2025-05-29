@@ -53,7 +53,7 @@ func (s *Service) RefreshToken(ctx context.Context, token string) (*AuthTokens, 
 		return nil, fmt.Errorf("refresh token validation failed: %w", err)
 	}
 
-	roles, err := s.userService.GetUserRoles(ctx, userID)
+	roles, err := s.userService.UserRoles(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user roles: %w", err)
 	}
