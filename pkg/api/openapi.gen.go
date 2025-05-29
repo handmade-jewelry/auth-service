@@ -44,6 +44,9 @@ type ServerInterface interface {
 	// Login user
 	// (POST /login)
 	PostLogin(w http.ResponseWriter, r *http.Request)
+	// Logout user
+	// (POST /logout)
+	PostLogout(w http.ResponseWriter, r *http.Request)
 	// Refresh access token
 	// (GET /refresh-token)
 	GetRefreshToken(w http.ResponseWriter, r *http.Request, params GetRefreshTokenParams)
@@ -80,6 +83,12 @@ func (_ Unimplemented) PutAdminService(w http.ResponseWriter, r *http.Request) {
 // Login user
 // (POST /login)
 func (_ Unimplemented) PostLogin(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Logout user
+// (POST /logout)
+func (_ Unimplemented) PostLogout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -159,6 +168,20 @@ func (siw *ServerInterfaceWrapper) PostLogin(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PostLogin(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostLogout operation middleware
+func (siw *ServerInterfaceWrapper) PostLogout(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostLogout(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -332,6 +355,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/login", wrapper.PostLogin)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/logout", wrapper.PostLogout)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/refresh-token", wrapper.GetRefreshToken)

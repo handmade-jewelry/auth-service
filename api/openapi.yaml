@@ -36,6 +36,15 @@ paths:
           description: Successful authentication
         "400":
           description: Invalid data
+  /logout:
+    post:
+      summary: Logout user
+      description: Logs out user by invalidating refresh token and clearing authentication cookies.
+      responses:
+        "200":
+          description: Successful logout
+        "401":
+          description: Unauthorized - invalid or missing authentication
 
   /refresh-token:
     get:

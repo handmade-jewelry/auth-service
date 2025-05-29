@@ -39,8 +39,12 @@ func (u *Service) GetUserRoles(ctx context.Context, userID int64) ([]string, err
 	return []string{"CUSTOMER"}, nil
 }
 
-func (u *Service) Login(ctx context.Context) {
+func (u *Service) Login(ctx context.Context, email, password string) (*UserWithRoles, error) {
 	//todo stub
+	return &UserWithRoles{
+		UserID: 1,
+		Roles:  []string{"CUSTOMER"},
+	}, nil
 }
 
 func (u *Service) Logout(ctx context.Context) {
