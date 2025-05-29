@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/handmade-jewelry/auth-service/internal/service/auth"
 	"github.com/handmade-jewelry/auth-service/internal/service/route"
+	pkgAuth "github.com/handmade-jewelry/auth-service/internal/transport/auth"
+	"github.com/handmade-jewelry/auth-service/internal/transport/resource"
 	"github.com/handmade-jewelry/auth-service/logger"
 	"strconv"
 	"time"
@@ -25,14 +27,16 @@ import (
 
 type App struct {
 	cfg                   *config.Config
+	redisClient           *cache.RedisClient
+	jwtService            *jwt.Service
 	userService           *userService.Service
 	resourceService       *resourceService.Service
 	serviceService        *serviceService.Service
 	routeService          *route.Service
 	authService           *auth.Service
-	redisClient           *cache.RedisClient
+	authAPIHandler        *pkgAuth.APIHandler
+	gatewayAPIHandler     *resource.APIHandler
 	authMiddleware        *proxy.AuthMiddleware
-	jwtService            *jwt.Service
 	server                *transport.Server
 	dBPool                *pgxpool.Pool
 	refreshResourceTicker *resourceRefresh.Ticker
@@ -49,11 +53,14 @@ func NewApp(ctx context.Context) (*App, error) {
 }
 
 func (a *App) Run(ctx context.Context) error {
-	cfg := &transport.Config{
-		HTTPPort:            a.cfg.HTTPServerPort,
-		SwaggerURL:          a.cfg.SwaggerURL,
-		SwaggerSpecFilePath: a.cfg.SwaggerSpecFilePath,
-		SwaggerSpecURL:      a.cfg.SwaggerSpecURL,
+	cfg := &transport.SwaggerConfig{
+		SwaggerURL:              a.cfg.SwaggerURL,
+		SwaggerAuthURL:          a.cfg.SwaggerAuthURL,
+		SwaggerResourceURL:      a.cfg.SwaggerResourceURL,
+		SwaggerAuthSpecURL:      a.cfg.SwaggerAuthSpecURL,
+		SwaggerAuthSpecPath:     a.cfg.SwaggerAuthSpecPath,
+		SwaggerResourceSpecURL:  a.cfg.SwaggerResourceSpecURL,
+		SwaggerResourceSpecPath: a.cfg.SwaggerResourceSpecPath,
 	}
 
 	a.runWorker(ctx)
@@ -126,9 +133,16 @@ func (a *App) initConfig(_ context.Context) error {
 		DBMinCons:                    viper.GetInt32(config.DBMinCons),
 		DBMaxConLifetime:             dBMaxConLifetime,
 		HTTPServerPort:               viper.GetString(config.HTTPServerPort),
+		HTTPProxyPrefix:              viper.GetString(config.HTTPProxyPrefix),
+		HTTPAuthPrefix:               viper.GetString(config.HTTPAuthPrefix),
+		HTTPResourcePrefix:           viper.GetString(config.HTTPResourcePrefix),
 		SwaggerURL:                   viper.GetString(config.SwaggerURL),
-		SwaggerSpecURL:               viper.GetString(config.SwaggerSpecURL),
-		SwaggerSpecFilePath:          viper.GetString(config.SwaggerSpecFilePath),
+		SwaggerAuthURL:               viper.GetString(config.SwaggerAuthURL),
+		SwaggerResourceURL:           viper.GetString(config.SwaggerResourceURL),
+		SwaggerAuthSpecURL:           viper.GetString(config.SwaggerAuthSpecURL),
+		SwaggerAuthSpecPath:          viper.GetString(config.SwaggerAuthSpecPath),
+		SwaggerResourceSpecURL:       viper.GetString(config.SwaggerResourceSpecURL),
+		SwaggerResourceSpecPath:      viper.GetString(config.SwaggerResourceSpecPath),
 		RedisAddress:                 viper.GetString(config.RedisAddress),
 		RedisPassword:                viper.GetString(config.RedisPassword),
 		RedisDB:                      viper.GetInt(config.RedisDb),
@@ -169,6 +183,12 @@ func (a *App) initService(_ context.Context) error {
 	return nil
 }
 
+func (a *App) initAPIHandler(_ context.Context) error {
+	a.authAPIHandler = pkgAuth.NewAPIHandler(a.authService)
+	a.gatewayAPIHandler = resource.NewAPIHandler()
+	return nil
+}
+
 func (a *App) initCache(_ context.Context) error {
 	a.redisClient = cache.NewRedisClient(
 		a.cfg.RedisAddress,
@@ -185,7 +205,13 @@ func (a *App) initMiddleware(_ context.Context) error {
 }
 
 func (a *App) initServer(_ context.Context) error {
-	a.server = transport.NewServer(a.authMiddleware, a.authService)
+	opts := &transport.Opts{
+		HTTPPort:       a.cfg.HTTPServerPort,
+		ProxyPrefix:    a.cfg.HTTPProxyPrefix,
+		AuthPrefix:     a.cfg.HTTPAuthPrefix,
+		ResourcePrefix: a.cfg.HTTPResourcePrefix,
+	}
+	a.server = transport.NewServer(opts, a.authMiddleware, a.authAPIHandler, a.gatewayAPIHandler)
 	return nil
 }
 

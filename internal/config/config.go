@@ -17,9 +17,16 @@ const (
 	DBMinCons                    = "database.min_cons"
 	DBMaxConLifetime             = "database.max_con_lifetime"
 	HTTPServerPort               = "server.http.port"
+	HTTPProxyPrefix              = "server.http.proxy_prefix"
+	HTTPAuthPrefix               = "server.http.auth_prefix"
+	HTTPResourcePrefix           = "server.http.resource_prefix"
 	SwaggerURL                   = "swagger.url"
-	SwaggerSpecURL               = "swagger.spec_url"
-	SwaggerSpecFilePath          = "swagger.spec_file_path"
+	SwaggerAuthURL               = "swagger.auth_url"
+	SwaggerResourceURL           = "swagger.resource_url"
+	SwaggerAuthSpecURL           = "swagger.auth_spec_url"
+	SwaggerAuthSpecPath          = "swagger.auth_spec_path"
+	SwaggerResourceSpecURL       = "swagger.resource_spec_url"
+	SwaggerResourceSpecPath      = "swagger.resource_spec_path"
 	RedisAddress                 = "redis.addr"
 	RedisPassword                = "redis.password"
 	RedisDb                      = "redis.db"
@@ -45,9 +52,16 @@ type Config struct {
 	DBMinCons                    int32
 	DBMaxConLifetime             time.Duration
 	HTTPServerPort               string
+	HTTPProxyPrefix              string
+	HTTPAuthPrefix               string
+	HTTPResourcePrefix           string
 	SwaggerURL                   string
-	SwaggerSpecURL               string
-	SwaggerSpecFilePath          string
+	SwaggerAuthURL               string
+	SwaggerResourceURL           string
+	SwaggerAuthSpecURL           string
+	SwaggerAuthSpecPath          string
+	SwaggerResourceSpecURL       string
+	SwaggerResourceSpecPath      string
 	RedisAddress                 string
 	RedisPassword                string
 	RedisDB                      int
