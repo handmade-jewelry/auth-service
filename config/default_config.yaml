@@ -30,13 +30,20 @@ refresh_resources_interval: ""
 # Swagger UI
 swagger:
   url: ""
-  spec_url: ""
-  spec_file_path: ""
+  auth_spec_url: ""
+  auth_spec_path: ""
+  auth_url: ""
+  resource_spec_url: ""
+  resource_spec_path: ""
+  resource_url: ""
 
 # HTTP server
 server:
   http:
     port: ""
+    proxy_prefix: ""
+    auth_prefix: ""
+    resource_prefix: ""
 
 # GRPC client
 grpc_client:

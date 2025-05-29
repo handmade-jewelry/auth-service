@@ -5,9 +5,9 @@ info:
   version: 0.1.9
 
 servers:
-  - url: http://localhost:8083/
+  - url: http://localhost:8083/auth/
     description: Local development server
-  - url: https://www.handmadejewelry.com/
+  - url: https://www.handmadejewelry.com/auth/
     description: Production server
 
 paths:
@@ -74,29 +74,3 @@ paths:
           schema:
             type: string
           description: Refresh token stored in HttpOnly cookie
-
-  /admin/service:
-    get:
-      summary: Returns a list of services
-      description: Returns a list of services
-      responses:
-        "200":
-          description: Successfully retrieved list of services
-    post:
-      summary: Create new service
-      description: Create new service
-      responses:
-        "200":
-          description: Service successfully created
-    put:
-      summary: Update service
-      description: Update service
-      responses:
-        "200":
-          description: Service successfully updated
-    delete:
-      summary: Delete service
-      description: Delete service
-      responses:
-        "200":
-          description: Service successfully deleted

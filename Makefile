@@ -1,7 +1,14 @@
-OPENAPI_SPEC = api/openapi.yaml
-GEN_FILE = pkg/api/openapi.gen.go
+OPENAPI_RESOURCE = api/resourceapi.yaml
+OPENAPI_AUTH = api/authapi.yaml
+
+GEN_RESOURCE = pkg/api/resource/resourceapi.gen.go
+GEN_AUTH = pkg/api/auth/authapi.gen.go
+
+PACKAGE_RESOURCE = resource
+PACKAGE_AUTH = auth
+
 OAPI_CODEGEN = oapi-codegen
-PACKAGE = api
+
 MIGRATIONS_DIR = ./migrations
 
 DB_USER = auth_service_user
@@ -10,9 +17,13 @@ DB_SSLMODE = disable
 
 .PHONY: generate-oapi new-migration migration-up migration-down
 
-# Generate openapi.yaml
-generate-oapi:
-	$(OAPI_CODEGEN) -generate types,chi-server -o $(GEN_FILE) -package $(PACKAGE) $(OPENAPI_SPEC)
+# Generate resourceapi.yaml
+generate-resource:
+	$(OAPI_CODEGEN) -generate types,chi-server -o $(GEN_RESOURCE) -package $(PACKAGE_RESOURCE) $(OPENAPI_RESOURCE)
+
+# Generate authapi.yaml
+generate-auth:
+	$(OAPI_CODEGEN) -generate types,chi-server -o $(GEN_AUTH) -package $(PACKAGE_AUTH) $(OPENAPI_AUTH)
 
 # Make new migration sql
 new-migration:

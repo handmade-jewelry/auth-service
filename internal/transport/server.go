@@ -1,69 +1,103 @@
 package transport
 
 import (
-	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/handmade-jewelry/auth-service/internal/service/auth"
-	"github.com/handmade-jewelry/auth-service/internal/transport/handler"
+	"github.com/handmade-jewelry/auth-service/internal/transport/auth"
 	"github.com/handmade-jewelry/auth-service/internal/transport/proxy"
+	"github.com/handmade-jewelry/auth-service/internal/transport/resource"
 	"github.com/handmade-jewelry/auth-service/logger"
-	"github.com/handmade-jewelry/auth-service/pkg/api"
+	pkgAuth "github.com/handmade-jewelry/auth-service/pkg/api/auth"
+	pkgGateway "github.com/handmade-jewelry/auth-service/pkg/api/resource"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 )
 
-type Config struct {
-	SwaggerURL          string
-	SwaggerSpecURL      string
-	SwaggerSpecFilePath string
-	HTTPPort            string
+type SwaggerConfig struct {
+	SwaggerURL              string
+	SwaggerAuthURL          string
+	SwaggerResourceURL      string
+	SwaggerAuthSpecURL      string
+	SwaggerAuthSpecPath     string
+	SwaggerResourceSpecURL  string
+	SwaggerResourceSpecPath string
+}
+
+type Opts struct {
+	HTTPPort       string
+	ProxyPrefix    string
+	AuthPrefix     string
+	ResourcePrefix string
 }
 
 type Server struct {
-	router         chi.Router
-	authMiddleware *proxy.AuthMiddleware
-	authService    *auth.Service
+	opts              *Opts
+	router            chi.Router
+	authMiddleware    *proxy.AuthMiddleware
+	authAPIHandler    *auth.APIHandler
+	gatewayAPIHandler *resource.APIHandler
 }
 
-func NewServer(authMiddleware *proxy.AuthMiddleware, authService *auth.Service) *Server {
+func NewServer(
+	opts *Opts,
+	authMiddleware *proxy.AuthMiddleware,
+	authAPIHandler *auth.APIHandler,
+	gatewayAPIHandler *resource.APIHandler,
+) *Server {
 	return &Server{
-		router:         chi.NewRouter(),
-		authMiddleware: authMiddleware,
-		authService:    authService,
+		opts:              opts,
+		router:            chi.NewRouter(),
+		authMiddleware:    authMiddleware,
+		authAPIHandler:    authAPIHandler,
+		gatewayAPIHandler: gatewayAPIHandler,
 	}
 }
 
-func (s *Server) Run(cfg *Config) error {
+func (s *Server) Run(cfg *SwaggerConfig) error {
 	s.initSwagger(cfg)
 
-	s.router.Route("/api", func(r chi.Router) {
-		r.Use(s.authMiddleware.CheckAccess)
+	s.router.Route(s.opts.ProxyPrefix, func(r chi.Router) {
+		r.Route(s.opts.AuthPrefix, func(r chi.Router) {
+			pkgAuth.HandlerFromMux(s.authAPIHandler, r)
+		})
 
-		server := handler.NewAPIHandler(s.authService)
-		api.HandlerFromMux(server, r)
+		r.Route(s.opts.ResourcePrefix, func(r chi.Router) {
+			pkgGateway.HandlerFromMux(s.gatewayAPIHandler, r)
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(s.authMiddleware.CheckAccess)
+			r.NotFound(http.NotFoundHandler().ServeHTTP)
+			r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			})
+		})
 	})
 
-	server := handler.NewAPIHandler(s.authService)
-
-	api.HandlerFromMux(server, s.router)
-
-	err := http.ListenAndServe(cfg.HTTPPort, s.router)
+	err := http.ListenAndServe(s.opts.HTTPPort, s.router)
 	if err != nil {
 		logger.Error("error starting server: ", err)
 		return err
 	}
 
-	logger.Info("HTTP service is running", "port", cfg.HTTPPort)
+	logger.Info("HTTP service is running", "port", s.opts.HTTPPort)
 
 	return nil
 }
 
-func (s *Server) initSwagger(cfg *Config) {
-	s.router.HandleFunc(cfg.SwaggerSpecURL, func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, cfg.SwaggerSpecFilePath)
+func (s *Server) initSwagger(cfg *SwaggerConfig) {
+	s.router.HandleFunc(cfg.SwaggerAuthSpecURL, func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, cfg.SwaggerAuthSpecPath)
 	})
 
-	s.router.Handle(fmt.Sprintf("%s/*", cfg.SwaggerURL), httpSwagger.Handler(
-		httpSwagger.URL(cfg.SwaggerSpecURL),
+	s.router.HandleFunc(cfg.SwaggerResourceSpecURL, func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, cfg.SwaggerResourceSpecPath)
+	})
+
+	s.router.Handle(cfg.SwaggerAuthURL, httpSwagger.Handler(
+		httpSwagger.URL(cfg.SwaggerAuthSpecURL),
+	))
+
+	s.router.Handle(cfg.SwaggerResourceURL, httpSwagger.Handler(
+		httpSwagger.URL(cfg.SwaggerResourceSpecURL),
 	))
 }

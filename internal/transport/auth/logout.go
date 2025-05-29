@@ -1,4 +1,4 @@
-package handler
+package auth
 
 import (
 	"github.com/handmade-jewelry/auth-service/internal/utils/cookie"

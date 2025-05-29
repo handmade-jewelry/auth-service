@@ -1,0 +1,20 @@
+openapi: 3.0.4
+info:
+  title: Authorization service
+  description: Proxy  API
+  version: 0.1.9
+
+servers:
+  - url: http://localhost:8083/resource
+    description: Local development server
+  - url: https://www.handmadejewelry.com/resource
+    description: Production server
+
+paths:
+  /service:
+    get:
+      summary: Returns a list of services
+      description: Returns a list of services
+      responses:
+        "200":
+          description: Successfully retrieved list of services
