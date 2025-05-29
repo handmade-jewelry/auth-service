@@ -134,20 +134,36 @@ func (s *Service) tokenRotate(ctx context.Context, oldTokenID, newTokenID string
 	return nil
 }
 
-// todo for testing
-func (s *Service) Login(ctx context.Context) (*AuthTokens, error) {
-	var userID int64 = 1
-	roles := []string{"CUSTOMER"}
-	tokenID := uuid.NewString()
-	authTokens, err := s.generateAuthTokens(tokenID, userID, roles)
+func (s *Service) Login(ctx context.Context, email, password string) (*AuthTokens, error) {
+	userWithRoles, err := s.userService.Login(ctx, email, password)
 	if err != nil {
-		//todo
+		return nil, fmt.Errorf("user login failed: %w", err)
 	}
 
-	err = s.redisClient.Set(ctx, refreshTokenPrefix+tokenID, userID, s.refreshTokenTTL)
+	tokenID := uuid.NewString()
+	authTokens, err := s.generateAuthTokens(tokenID, userWithRoles.UserID, userWithRoles.Roles)
 	if err != nil {
-		//todo
+		return nil, fmt.Errorf("failed to generate auth tokens: %w", err)
+	}
+
+	err = s.redisClient.Set(ctx, refreshTokenPrefix+tokenID, userWithRoles.UserID, s.refreshTokenTTL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to save refresh token in redis: %w", err)
 	}
 
 	return authTokens, nil
+}
+
+func (s *Service) Logout(ctx context.Context, refreshToken string) error {
+	claims, err := s.jwtService.ParseRefreshToken(refreshToken)
+	if err != nil {
+		return fmt.Errorf("invalid token: %w", err)
+	}
+
+	err = s.redisClient.Delete(ctx, refreshTokenPrefix+claims.ID)
+	if err != nil {
+		return fmt.Errorf("failed to delete refresh token from redis: %w", err)
+	}
+
+	return nil
 }

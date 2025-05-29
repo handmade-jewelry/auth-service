@@ -3,12 +3,11 @@ package handler
 import (
 	"github.com/handmade-jewelry/auth-service/internal/utils/cookie"
 	"github.com/handmade-jewelry/auth-service/logger"
-	"github.com/handmade-jewelry/auth-service/pkg/api"
 	"net/http"
 	"time"
 )
 
-func (a *APIHandler) GetRefreshToken(wr http.ResponseWriter, req *http.Request, _ api.GetRefreshTokenParams) {
+func (a *APIHandler) PostLogout(wr http.ResponseWriter, req *http.Request) {
 	token, err := cookie.GetCookie(req, cookie.RefreshTokenName)
 	if err != nil {
 		logger.Error("failed to get refresh token cookie", err)
@@ -16,32 +15,32 @@ func (a *APIHandler) GetRefreshToken(wr http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	authTokens, err := a.authService.RefreshToken(req.Context(), token)
+	err = a.authService.Logout(req.Context(), token)
 	if err != nil {
-		logger.Error("failed to logout user", err)
-		http.Error(wr, "unauthorized", http.StatusUnauthorized)
+		http.Error(wr, "", http.StatusUnauthorized)
 		return
 	}
 
-	now := time.Now()
+	expired := time.Now().Add(-time.Hour)
 	http.SetCookie(wr, &http.Cookie{
 		Name:     cookie.RefreshTokenName,
-		Value:    authTokens.RefreshToken,
+		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
-		Expires:  now.Add(authTokens.RefreshTTL),
+		Expires:  expired,
+		MaxAge:   -1,
 	})
-
 	http.SetCookie(wr, &http.Cookie{
 		Name:     cookie.AccessTokenName,
-		Value:    authTokens.AccessToken,
+		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
-		Expires:  now.Add(authTokens.AccessTTL),
+		Expires:  expired,
+		MaxAge:   -1,
 	})
 
 	wr.WriteHeader(http.StatusOK)

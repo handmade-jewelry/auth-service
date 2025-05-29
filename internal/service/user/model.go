@@ -16,7 +16,7 @@ type Role struct {
 	//DeletedAT time.Time todo нужно ли
 }
 
-type UserRoles struct {
-	UserID int
+type UserWithRoles struct {
+	UserID int64
 	Roles  []string
 }
