@@ -34,18 +34,15 @@ func NewService(opts *config.GRPCOptions) (*Service, error) {
 	}, nil
 }
 
-func (u *Service) RefreshToken(ctx context.Context) {
+func (u *Service) GetUserRoles(ctx context.Context, userID int64) ([]string, error) {
 	//todo stub
+	return []string{"CUSTOMER"}, nil
 }
 
 func (u *Service) Login(ctx context.Context) {
 	//todo stub
 }
 
-func (u *Service) ParseToken(ctx context.Context) {
-	//todo stub
-}
-
-func (u *Service) GenerateToken(ctx context.Context) {
+func (u *Service) Logout(ctx context.Context) {
 	//todo stub
 }

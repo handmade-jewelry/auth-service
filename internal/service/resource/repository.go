@@ -56,9 +56,6 @@ func (r *repository) getResourceByServiceIDs(ctx context.Context, ids []int) ([]
 	var resources []*Resource
 	err = pgxscan.Get(ctx, r.dbPool, &resources, query, args...)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
 		return nil, err
 	}
 	return resources, nil

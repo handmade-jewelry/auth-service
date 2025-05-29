@@ -2,5 +2,7 @@
 /.idea
 *.iml
 
-# Config
+# Config local
 /config/config.yaml
+
+.DS_Store

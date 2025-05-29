@@ -2,7 +2,8 @@ package route
 
 type Route struct {
 	Host             string
-	Path             string
+	PublicPath       string
+	ServicePath      string
 	Method           string
 	Scheme           string
 	Roles            []string

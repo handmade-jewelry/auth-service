@@ -5,7 +5,8 @@ import "time"
 type Resource struct {
 	ID               int
 	ServiceID        int
-	Path             string
+	PublicPath       string
+	ServicePath      string
 	Method           string
 	Scheme           string
 	Roles            []string

@@ -13,8 +13,8 @@ database:
 # JWT Token
 jwt:
   token_secret: ""
-  access_token_expiry_minutes: ""
-  refresh_token_expiry_minutes: ""
+  access_token_ttl: ""
+  refresh_token_ttl: ""
 
 # Redis
 redis:
@@ -29,7 +29,8 @@ refresh_resources_interval: ""
 
 # Swagger UI
 swagger:
-  url_path: ""
+  url: ""
+  spec_url: ""
   spec_file_path: ""
 
 # HTTP server
@@ -44,3 +45,7 @@ grpc_client:
 
 user_service:
   host: ""
+
+# Worker
+worker_mode:
+  refresh_routes: ""
