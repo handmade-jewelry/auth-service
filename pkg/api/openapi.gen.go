@@ -8,7 +8,24 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// PostLoginJSONBody defines parameters for PostLogin.
+type PostLoginJSONBody struct {
+	Email    openapi_types.Email `json:"email"`
+	Password string              `json:"password"`
+}
+
+// GetRefreshTokenParams defines parameters for GetRefreshToken.
+type GetRefreshTokenParams struct {
+	// RefreshToken Refresh token stored in HttpOnly cookie
+	RefreshToken string `form:"refresh_token" json:"refresh_token"`
+}
+
+// PostLoginJSONRequestBody defines body for PostLogin for application/json ContentType.
+type PostLoginJSONRequestBody PostLoginJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -29,7 +46,7 @@ type ServerInterface interface {
 	PostLogin(w http.ResponseWriter, r *http.Request)
 	// Refresh access token
 	// (GET /refresh-token)
-	GetRefreshToken(w http.ResponseWriter, r *http.Request)
+	GetRefreshToken(w http.ResponseWriter, r *http.Request, params GetRefreshTokenParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -68,7 +85,7 @@ func (_ Unimplemented) PostLogin(w http.ResponseWriter, r *http.Request) {
 
 // Refresh access token
 // (GET /refresh-token)
-func (_ Unimplemented) GetRefreshToken(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) GetRefreshToken(w http.ResponseWriter, r *http.Request, params GetRefreshTokenParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -154,8 +171,31 @@ func (siw *ServerInterfaceWrapper) PostLogin(w http.ResponseWriter, r *http.Requ
 // GetRefreshToken operation middleware
 func (siw *ServerInterfaceWrapper) GetRefreshToken(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRefreshTokenParams
+
+	{
+		var cookie *http.Cookie
+
+		if cookie, err = r.Cookie("refresh_token"); err == nil {
+			var value string
+			err = runtime.BindStyledParameterWithOptions("simple", "refresh_token", cookie.Value, &value, runtime.BindStyledParameterOptions{Explode: true, Required: true})
+			if err != nil {
+				siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "refresh_token", Err: err})
+				return
+			}
+			params.RefreshToken = value
+
+		} else {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "refresh_token"})
+			return
+		}
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetRefreshToken(w, r)
+		siw.Handler.GetRefreshToken(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {

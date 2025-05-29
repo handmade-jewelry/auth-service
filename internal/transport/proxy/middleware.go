@@ -1,12 +1,11 @@
 package proxy
 
 import (
-	"net/http"
-	"net/http/httputil"
-
 	"github.com/handmade-jewelry/auth-service/internal/jwt"
 	routeService "github.com/handmade-jewelry/auth-service/internal/service/route"
 	userService "github.com/handmade-jewelry/auth-service/internal/service/user"
+	"net/http"
+	"net/http/httputil"
 )
 
 type AuthMiddleware struct {
@@ -27,7 +26,7 @@ func NewAuthMiddleware(
 	}
 }
 
-func (a *AuthMiddleware) CheckAccess(next http.Handler) http.Handler {
+func (a *AuthMiddleware) CheckAccess(_ http.Handler) http.Handler {
 	return http.HandlerFunc(func(wr http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		route, err := a.checkAuth(ctx, req)
@@ -42,7 +41,7 @@ func (a *AuthMiddleware) CheckAccess(next http.Handler) http.Handler {
 				req.URL.Scheme = route.Scheme
 				req.URL.Host = route.Host
 				req.Host = route.Host
-				req.URL.Path = route.Path
+				req.URL.Path = route.ServicePath
 			},
 		}
 

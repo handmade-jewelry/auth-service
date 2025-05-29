@@ -5,14 +5,32 @@ info:
   version: 0.1.9
 
 servers:
-  - url: https://www.handmadejewellery.com/
-    description: Optional transport description, e.g. Main (production) transport
+  - url: http://localhost:8083/
+    description: Local development server
+  - url: https://www.handmadejewelry.com/
+    description: Production server
 
 paths:
   /login:
     post:
       summary: Login user
       description: Authenticates user by login and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+              required:
+                - email
+                - password
       responses:
         "200":
           description: Successful authentication
@@ -22,12 +40,31 @@ paths:
   /refresh-token:
     get:
       summary: Refresh access token
-      description: Refresh access token by refresh token
+      description: Refresh access token using a refresh token
       responses:
         "200":
-          description: Refresh successfully
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: New access token
+                  refresh_token:
+                    type: string
+                    description: New refresh token
         "401":
-          description: User unauthorized
+          description: Unauthorized — invalid or expired refresh token
+      security: [ ]
+      parameters:
+        - in: cookie
+          name: refresh_token
+          required: true
+          schema:
+            type: string
+          description: Refresh token stored in HttpOnly cookie
 
   /admin/service:
     get:

@@ -2,11 +2,8 @@ package route
 
 import (
 	"context"
-	"errors"
-
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/v2/pgxscan"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -45,9 +42,6 @@ func (r *repository) getRouteByPath(ctx context.Context, path string) (*Route, e
 	var route Route
 	err = pgxscan.Get(ctx, r.dbPool, &route, query, args...)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
 		return nil, err
 	}
 
@@ -80,9 +74,6 @@ func (r *repository) getActiveRoutes(ctx context.Context) ([]*Route, error) {
 	var routes []*Route
 	err = pgxscan.Select(ctx, r.dbPool, &routes, query, args...)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
 		return nil, err
 	}
 	return routes, nil

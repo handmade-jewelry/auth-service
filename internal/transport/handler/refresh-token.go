@@ -1,19 +1,48 @@
 package handler
 
-import "net/http"
+import (
+	"github.com/handmade-jewelry/auth-service/internal/utils/cookie"
+	"github.com/handmade-jewelry/auth-service/logger"
+	"github.com/handmade-jewelry/auth-service/pkg/api"
+	"net/http"
+	"time"
+)
 
-func (h *Handler) GetRefreshToken(w http.ResponseWriter, r *http.Request) {
+func (a *APIHandler) GetRefreshToken(wr http.ResponseWriter, req *http.Request, _ api.GetRefreshTokenParams) {
+	token, err := cookie.GetCookie(req, cookie.RefreshTokenName)
+	if err != nil {
+		logger.Error("failed to get refresh token cookie", err)
+		http.Error(wr, "refresh token not found", http.StatusUnauthorized)
+		return
+	}
 
-	// get cookie
+	authTokens, err := a.authService.RefreshToken(req.Context(), token)
+	if err != nil {
+		logger.Error("failed to refresh tokens", err)
+		http.Error(wr, "invalid refresh token", http.StatusUnauthorized)
+		return
+	}
 
-	// check cookie token
+	now := time.Now()
+	http.SetCookie(wr, &http.Cookie{
+		Name:     cookie.RefreshTokenName,
+		Value:    authTokens.RefreshToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		Expires:  now.Add(authTokens.RefreshTTL),
+	})
 
-	// check token in redis map
+	http.SetCookie(wr, &http.Cookie{
+		Name:     cookie.AccessTokenName,
+		Value:    authTokens.AccessToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		Expires:  now.Add(authTokens.AccessTTL),
+	})
 
-	// check refresh token exp
-
-	// generate both new tokens
-
-	//set tokens in cookies
-
+	wr.WriteHeader(http.StatusOK)
 }

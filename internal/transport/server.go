@@ -3,16 +3,18 @@ package transport
 import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/handmade-jewelry/auth-service/internal/service/auth"
 	"github.com/handmade-jewelry/auth-service/internal/transport/handler"
 	"github.com/handmade-jewelry/auth-service/internal/transport/proxy"
+	"github.com/handmade-jewelry/auth-service/logger"
 	"github.com/handmade-jewelry/auth-service/pkg/api"
 	httpSwagger "github.com/swaggo/http-swagger"
-	"log"
 	"net/http"
 )
 
 type Config struct {
-	SwaggerURLPath      string
+	SwaggerURL          string
+	SwaggerSpecURL      string
 	SwaggerSpecFilePath string
 	HTTPPort            string
 }
@@ -20,42 +22,48 @@ type Config struct {
 type Server struct {
 	router         chi.Router
 	authMiddleware *proxy.AuthMiddleware
+	authService    *auth.Service
 }
 
-func NewServer(authMiddleware *proxy.AuthMiddleware) *Server {
+func NewServer(authMiddleware *proxy.AuthMiddleware, authService *auth.Service) *Server {
 	return &Server{
 		router:         chi.NewRouter(),
 		authMiddleware: authMiddleware,
+		authService:    authService,
 	}
 }
 
 func (s *Server) Run(cfg *Config) error {
-	s.router.Use(s.authMiddleware.CheckAccess)
-
 	s.initSwagger(cfg)
 
-	server := handler.NewHandler()
+	s.router.Route("/api", func(r chi.Router) {
+		r.Use(s.authMiddleware.CheckAccess)
+
+		server := handler.NewAPIHandler(s.authService)
+		api.HandlerFromMux(server, r)
+	})
+
+	server := handler.NewAPIHandler(s.authService)
 
 	api.HandlerFromMux(server, s.router)
 
 	err := http.ListenAndServe(cfg.HTTPPort, s.router)
 	if err != nil {
-		//todo
-		log.Printf("Error starting server: %v\n", err)
+		logger.Error("error starting server: ", err)
 		return err
 	}
 
-	fmt.Println("Proxy service is running on :8090")
+	logger.Info("HTTP service is running", "port", cfg.HTTPPort)
 
 	return nil
 }
 
 func (s *Server) initSwagger(cfg *Config) {
-	s.router.Get(cfg.SwaggerURLPath, httpSwagger.Handler(
-		httpSwagger.URL(cfg.SwaggerURLPath),
-	))
-
-	s.router.Get(cfg.SwaggerURLPath, func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, cfg.SwaggerURLPath)
+	s.router.HandleFunc(cfg.SwaggerSpecURL, func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, cfg.SwaggerSpecFilePath)
 	})
+
+	s.router.Handle(fmt.Sprintf("%s/*", cfg.SwaggerURL), httpSwagger.Handler(
+		httpSwagger.URL(cfg.SwaggerSpecURL),
+	))
 }

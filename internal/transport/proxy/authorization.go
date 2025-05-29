@@ -2,48 +2,43 @@ package proxy
 
 import (
 	"context"
-	"github.com/pkg/errors"
+	"fmt"
+	"github.com/handmade-jewelry/auth-service/internal/utils/cookie"
+	"github.com/handmade-jewelry/auth-service/logger"
 	"net/http"
 
 	routeService "github.com/handmade-jewelry/auth-service/internal/service/route"
 )
 
-const (
-	accessTokenCookie = "access_token"
-)
-
+// todo errors
 func (a *AuthMiddleware) checkAuth(ctx context.Context, req *http.Request) (*routeService.Route, error) {
 	path := req.URL.Path
 
 	route, err := a.routeService.GetRouteByPath(ctx, path)
 	if err != nil {
-		//todo log error
-		return nil, err
-	}
-
-	if route == nil {
-		return nil, errors.New("route not found")
+		logger.ErrorWithFields("failed to get route", err, "path", path)
+		return nil, fmt.Errorf("failed to get route: %w", err)
 	}
 
 	if !route.CheckAccessToken {
 		return route, nil
 	}
 
-	token, err := a.getAccessToken(req)
+	token, err := cookie.GetCookie(req, cookie.AccessTokenName)
 	if err != nil {
-		//todo log
-		return nil, err
+		logger.Error("failed to get access token from cookie", err)
+		return nil, fmt.Errorf("failed to get cookie: %w", err)
 	}
 
-	claims, err := a.jwtService.ParseAuthToken(token)
+	claims, err := a.jwtService.ParseAccessToken(token)
 	if err != nil {
-		//todo log
-		return nil, err
+		logger.Error("failed to parse token", err)
+		return nil, fmt.Errorf("invalid token: %w", err)
 	}
 
 	if claims.IsExpired() {
-		//todo error
-		return nil, errors.New("token is expired")
+		logger.Error("token is expired", err)
+		return nil, fmt.Errorf("token is expired: %w", err)
 	}
 
 	if !route.CheckRoles {
@@ -51,23 +46,11 @@ func (a *AuthMiddleware) checkAuth(ctx context.Context, req *http.Request) (*rou
 	}
 
 	if !a.checkRoles(route.Roles, claims.Roles) {
-		//todo error access denied
-		return nil, errors.New("access denied")
+		logger.Error("roles is mismatched", err)
+		return nil, fmt.Errorf("access denied: %w", err)
 	}
 
 	return route, nil
-}
-
-func (a *AuthMiddleware) getAccessToken(req *http.Request) (string, error) {
-	cookie, err := req.Cookie(accessTokenCookie)
-	if err != nil {
-		//todo
-	}
-	if len(cookie.Value) == 0 {
-		//todo error
-	}
-
-	return cookie.Value, nil
 }
 
 func (a *AuthMiddleware) checkRoles(resourceRoles, userRoles []string) bool {

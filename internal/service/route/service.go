@@ -3,14 +3,17 @@ package route
 import (
 	"context"
 	"encoding/json"
+	"github.com/handmade-jewelry/auth-service/logger"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/handmade-jewelry/auth-service/internal/cache"
+	"github.com/handmade-jewelry/auth-service/libs/pgutils"
 )
 
-const refreshTokenPrefix = "refresh_token:"
+const serviceRoutePrefix = "service_route:"
 
 type Service struct {
 	repo        *repository
@@ -26,7 +29,7 @@ func NewService(dbPool *pgxpool.Pool, redisClient *cache.RedisClient) *Service {
 
 func (s *Service) GetRouteByPath(ctx context.Context, path string) (*Route, error) {
 	var route *Route
-	val, err := s.redisClient.GetBytes(ctx, refreshTokenPrefix+path)
+	val, err := s.redisClient.GetBytes(ctx, serviceRoutePrefix+path)
 	if err == nil {
 		err = json.Unmarshal(val, &route)
 		if err == nil {
@@ -34,11 +37,11 @@ func (s *Service) GetRouteByPath(ctx context.Context, path string) (*Route, erro
 		}
 	}
 
-	//todo log cache error
+	logger.ErrorWithFields("failed to unmarshal route from cache", err, "path", path)
 
 	route, err = s.repo.getRouteByPath(ctx, path)
 	if err != nil {
-		return nil, err
+		return nil, pgutils.MapPostgresError("failed to get route", err)
 	}
 
 	return route, nil
@@ -47,21 +50,25 @@ func (s *Service) GetRouteByPath(ctx context.Context, path string) (*Route, erro
 func (s *Service) RefreshCacheRoutes(ctx context.Context, ttl time.Duration) error {
 	routes, err := s.repo.getActiveRoutes(ctx)
 	if err != nil {
-		return err
+		return pgutils.MapPostgresError("failed to get active routes", err)
 	}
+
+	logger.Info("fetched active routes", "count", strconv.Itoa(len(routes)))
 
 	for _, route := range routes {
 		value, err := json.Marshal(route)
 		if err != nil {
-			//todo log err
+			logger.ErrorWithFields("failed to marshal route", err, "route.public_path", route.PublicPath)
 			continue
 		}
 
-		err = s.redisClient.Set(ctx, refreshTokenPrefix+route.Path, string(value), ttl)
+		err = s.redisClient.Set(ctx, serviceRoutePrefix+route.PublicPath, string(value), ttl)
 		if err != nil {
-			//todo log err
+			logger.Error("failed to set route in Redis", err)
 		}
 	}
+
+	logger.Info("route cache refresh complete", "count", strconv.Itoa(len(routes)))
 
 	return nil
 }

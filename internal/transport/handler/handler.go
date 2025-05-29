@@ -1,14 +1,13 @@
 package handler
 
-import (
-	userService "github.com/handmade-jewelry/auth-service/internal/service/user"
-)
+import "github.com/handmade-jewelry/auth-service/internal/service/auth"
 
-// todo rename
-type Handler struct {
-	userService *userService.Service
+type APIHandler struct {
+	authService *auth.Service
 }
 
-func NewHandler() *Handler {
-	return &Handler{}
+func NewAPIHandler(authService *auth.Service) *APIHandler {
+	return &APIHandler{
+		authService: authService,
+	}
 }

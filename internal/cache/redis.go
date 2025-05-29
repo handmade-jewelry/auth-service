@@ -20,7 +20,7 @@ func NewRedisClient(addr string, password string, db int) *RedisClient {
 	return &RedisClient{client: rdb}
 }
 
-func (r *RedisClient) Set(ctx context.Context, key string, value string, ttl time.Duration) error {
+func (r *RedisClient) Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
 	return r.client.Set(ctx, key, value, ttl).Err()
 }
 
@@ -34,4 +34,8 @@ func (r *RedisClient) GetBytes(ctx context.Context, key string) ([]byte, error) 
 
 func (r *RedisClient) Delete(ctx context.Context, key string) error {
 	return r.client.Del(ctx, key).Err()
+}
+
+func (r *RedisClient) Pipeline() redis.Pipeliner {
+	return r.client.Pipeline()
 }
