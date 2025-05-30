@@ -7,7 +7,7 @@ import (
 	"github.com/handmade-jewelry/auth-service/internal/transport/resource"
 	"github.com/handmade-jewelry/auth-service/logger"
 	pkgAuth "github.com/handmade-jewelry/auth-service/pkg/api/auth"
-	pkgGateway "github.com/handmade-jewelry/auth-service/pkg/api/resource"
+	pkgResource "github.com/handmade-jewelry/auth-service/pkg/api/resource"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 )
@@ -30,25 +30,25 @@ type Opts struct {
 }
 
 type Server struct {
-	opts              *Opts
-	router            chi.Router
-	authMiddleware    *proxy.AuthMiddleware
-	authAPIHandler    *auth.APIHandler
-	gatewayAPIHandler *resource.APIHandler
+	opts               *Opts
+	router             chi.Router
+	authMiddleware     *proxy.AuthMiddleware
+	authAPIHandler     *auth.APIHandler
+	resourceAPUHandler *resource.APIHandler
 }
 
 func NewServer(
 	opts *Opts,
 	authMiddleware *proxy.AuthMiddleware,
 	authAPIHandler *auth.APIHandler,
-	gatewayAPIHandler *resource.APIHandler,
+	resourceAPUHandler *resource.APIHandler,
 ) *Server {
 	return &Server{
-		opts:              opts,
-		router:            chi.NewRouter(),
-		authMiddleware:    authMiddleware,
-		authAPIHandler:    authAPIHandler,
-		gatewayAPIHandler: gatewayAPIHandler,
+		opts:               opts,
+		router:             chi.NewRouter(),
+		authMiddleware:     authMiddleware,
+		authAPIHandler:     authAPIHandler,
+		resourceAPUHandler: resourceAPUHandler,
 	}
 }
 
@@ -61,7 +61,7 @@ func (s *Server) Run(cfg *SwaggerConfig) error {
 		})
 
 		r.Route(s.opts.ResourcePrefix, func(r chi.Router) {
-			pkgGateway.HandlerFromMux(s.gatewayAPIHandler, r)
+			pkgResource.HandlerFromMux(s.resourceAPUHandler, r)
 		})
 
 		r.Group(func(r chi.Router) {
@@ -73,13 +73,13 @@ func (s *Server) Run(cfg *SwaggerConfig) error {
 		})
 	})
 
+	logger.Info("HTTP service is running", "port", s.opts.HTTPPort)
+
 	err := http.ListenAndServe(s.opts.HTTPPort, s.router)
 	if err != nil {
 		logger.Error("error starting server: ", err)
 		return err
 	}
-
-	logger.Info("HTTP service is running", "port", s.opts.HTTPPort)
 
 	return nil
 }

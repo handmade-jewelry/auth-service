@@ -12,9 +12,169 @@ servers:
 
 paths:
   /service:
-    get:
-      summary: Returns a list of services
-      description: Returns a list of services
+    post:
+      summary: Create a new service
+      description: Creates a new service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                isActive:
+                  type: boolean
+                host:
+                  type: string
+              required:
+                - name
+                - isActive
+                - host
+      responses:
+        "201":
+          $ref: '#/components/responses/CreateServiceResponse'
+        "400":
+          description: Invalid input data
+        "500":
+          description: Internal server error
+
+    put:
+      summary: Update a service
+      description: Updates an existing service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                name:
+                  type: string
+                isActive:
+                  type: boolean
+                host:
+                  type: string
+              required:
+                - id
+                - name
+                - isActive
+                - host
       responses:
         "200":
-          description: Successfully retrieved list of services
+          $ref: '#/components/responses/CreateServiceResponse'
+        "404":
+          description: Service not found
+
+  /service/{id}:
+    delete:
+      summary: Delete a service
+      description: Deletes a service by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Service deleted successfully
+        "404":
+          description: Service not found
+
+    get:
+      summary: Get a service by id
+      description: Returns a service
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          $ref: '#/components/responses/GetServiceResponse'
+        "404":
+          description: Service not found
+
+  /service/name/{name}:
+    get:
+      summary: Get a service by name
+      description: Returns a service
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/GetServiceResponse'
+        "404":
+          description: Service not found
+
+components:
+  schemas:
+    ServiceCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        isActive:
+          type: boolean
+        host:
+          type: string
+      required:
+        - name
+        - isActive
+        - host
+
+    Service:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        isActive:
+          type: boolean
+        host:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - name
+        - isActive
+        - host
+        - createdAt
+        - updatedAt
+
+  responses:
+    CreateServiceResponse:
+      description: Service created successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              id:
+                type: integer
+                description: The ID of the created service
+    GetServiceResponse:
+      description: Successfully retrieved the service
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Service'

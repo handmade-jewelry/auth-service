@@ -35,7 +35,7 @@ type App struct {
 	routeService          *route.Service
 	authService           *auth.Service
 	authAPIHandler        *pkgAuth.APIHandler
-	gatewayAPIHandler     *resource.APIHandler
+	resourceAPIHandler    *resource.APIHandler
 	authMiddleware        *proxy.AuthMiddleware
 	server                *transport.Server
 	dBPool                *pgxpool.Pool
@@ -75,6 +75,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initJWTService,
 		a.initDb,
 		a.initService,
+		a.initAPIHandler,
 		a.initMiddleware,
 		a.initServer,
 		a.initWorker,
@@ -185,7 +186,7 @@ func (a *App) initService(_ context.Context) error {
 
 func (a *App) initAPIHandler(_ context.Context) error {
 	a.authAPIHandler = pkgAuth.NewAPIHandler(a.authService)
-	a.gatewayAPIHandler = resource.NewAPIHandler()
+	a.resourceAPIHandler = resource.NewAPIHandler(a.serviceService)
 	return nil
 }
 
@@ -211,7 +212,7 @@ func (a *App) initServer(_ context.Context) error {
 		AuthPrefix:     a.cfg.HTTPAuthPrefix,
 		ResourcePrefix: a.cfg.HTTPResourcePrefix,
 	}
-	a.server = transport.NewServer(opts, a.authMiddleware, a.authAPIHandler, a.gatewayAPIHandler)
+	a.server = transport.NewServer(opts, a.authMiddleware, a.authAPIHandler, a.resourceAPIHandler)
 	return nil
 }
 
