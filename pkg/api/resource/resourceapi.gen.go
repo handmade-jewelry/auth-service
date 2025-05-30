@@ -6,24 +6,103 @@ package resource
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 )
+
+// Service defines model for Service.
+type Service struct {
+	CreatedAt time.Time  `json:"createdAt"`
+	DeletedAt *time.Time `json:"deletedAt"`
+	Host      string     `json:"host"`
+	Id        int        `json:"id"`
+	IsActive  bool       `json:"isActive"`
+	Name      string     `json:"name"`
+	UpdatedAt time.Time  `json:"updatedAt"`
+}
+
+// CreateServiceResponse defines model for CreateServiceResponse.
+type CreateServiceResponse struct {
+	// Id The ID of the created service
+	Id *int `json:"id,omitempty"`
+}
+
+// GetServiceResponse defines model for GetServiceResponse.
+type GetServiceResponse = Service
+
+// PostServiceJSONBody defines parameters for PostService.
+type PostServiceJSONBody struct {
+	Host     string `json:"host"`
+	IsActive bool   `json:"isActive"`
+	Name     string `json:"name"`
+}
+
+// PutServiceJSONBody defines parameters for PutService.
+type PutServiceJSONBody struct {
+	Host     string `json:"host"`
+	Id       int    `json:"id"`
+	IsActive bool   `json:"isActive"`
+	Name     string `json:"name"`
+}
+
+// PostServiceJSONRequestBody defines body for PostService for application/json ContentType.
+type PostServiceJSONRequestBody PostServiceJSONBody
+
+// PutServiceJSONRequestBody defines body for PutService for application/json ContentType.
+type PutServiceJSONRequestBody PutServiceJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Returns a list of services
-	// (GET /service)
-	GetService(w http.ResponseWriter, r *http.Request)
+	// Create a new service
+	// (POST /service)
+	PostService(w http.ResponseWriter, r *http.Request)
+	// Update a service
+	// (PUT /service)
+	PutService(w http.ResponseWriter, r *http.Request)
+	// Get a service by name
+	// (GET /service/name/{name})
+	GetServiceNameName(w http.ResponseWriter, r *http.Request, name string)
+	// Delete a service
+	// (DELETE /service/{id})
+	DeleteServiceId(w http.ResponseWriter, r *http.Request, id int)
+	// Get a service by id
+	// (GET /service/{id})
+	GetServiceId(w http.ResponseWriter, r *http.Request, id int)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
 
-// Returns a list of services
-// (GET /service)
-func (_ Unimplemented) GetService(w http.ResponseWriter, r *http.Request) {
+// Create a new service
+// (POST /service)
+func (_ Unimplemented) PostService(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update a service
+// (PUT /service)
+func (_ Unimplemented) PutService(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a service by name
+// (GET /service/name/{name})
+func (_ Unimplemented) GetServiceNameName(w http.ResponseWriter, r *http.Request, name string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a service
+// (DELETE /service/{id})
+func (_ Unimplemented) DeleteServiceId(w http.ResponseWriter, r *http.Request, id int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a service by id
+// (GET /service/{id})
+func (_ Unimplemented) GetServiceId(w http.ResponseWriter, r *http.Request, id int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -36,11 +115,100 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// GetService operation middleware
-func (siw *ServerInterfaceWrapper) GetService(w http.ResponseWriter, r *http.Request) {
+// PostService operation middleware
+func (siw *ServerInterfaceWrapper) PostService(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetService(w, r)
+		siw.Handler.PostService(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutService operation middleware
+func (siw *ServerInterfaceWrapper) PutService(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutService(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetServiceNameName operation middleware
+func (siw *ServerInterfaceWrapper) GetServiceNameName(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", chi.URLParam(r, "name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetServiceNameName(w, r, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteServiceId operation middleware
+func (siw *ServerInterfaceWrapper) DeleteServiceId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteServiceId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetServiceId operation middleware
+func (siw *ServerInterfaceWrapper) GetServiceId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetServiceId(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -164,7 +332,19 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/service", wrapper.GetService)
+		r.Post(options.BaseURL+"/service", wrapper.PostService)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/service", wrapper.PutService)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/service/name/{name}", wrapper.GetServiceNameName)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/service/{id}", wrapper.DeleteServiceId)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/service/{id}", wrapper.GetServiceId)
 	})
 
 	return r
