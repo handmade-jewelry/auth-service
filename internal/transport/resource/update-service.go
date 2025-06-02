@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func (a *APIHandler) PutService(w http.ResponseWriter, r *http.Request) {
+func (a *APIHandler) PutServiceId(w http.ResponseWriter, r *http.Request, id int) {
 	defer r.Body.Close()
 
 	var dto service.ServiceDTO
@@ -16,12 +16,12 @@ func (a *APIHandler) PutService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if dto.Name == "" || dto.Host == "" || dto.ID <= 0 {
+	if dto.Name == "" || dto.Host == "" || id <= 0 {
 		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}
 
-	srv, err := a.serviceService.UpdateService(r.Context(), &dto)
+	srv, err := a.serviceService.UpdateService(r.Context(), &dto, int64(id))
 	if err != nil {
 		http.Error(w, "Failed to create service", http.StatusInternalServerError)
 		return

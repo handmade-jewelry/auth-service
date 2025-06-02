@@ -15,7 +15,6 @@ type ServiceEntity struct {
 }
 
 type ServiceDTO struct {
-	ID       int64
 	Name     string
 	IsActive bool
 	Host     string

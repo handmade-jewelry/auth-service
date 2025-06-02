@@ -45,6 +45,9 @@ func (a *AuthMiddleware) checkAuth(ctx context.Context, req *http.Request) (*rou
 		return route, nil
 	}
 
+	//todo
+	//сверять список ролей с закешированным чтобы проверить что все роли валидные
+
 	if !a.checkRoles(route.Roles, claims.Roles) {
 		logger.Error("roles is mismatched", err)
 		return nil, fmt.Errorf("access denied: %w", err)

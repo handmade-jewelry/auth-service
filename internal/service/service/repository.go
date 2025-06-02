@@ -38,13 +38,13 @@ func (r *repository) createService(ctx context.Context, dto *ServiceDTO) (*Servi
 	return &svc, nil
 }
 
-func (r *repository) updateService(ctx context.Context, dto *ServiceDTO) (*ServiceEntity, error) {
+func (r *repository) updateService(ctx context.Context, dto *ServiceDTO, id int64) (*ServiceEntity, error) {
 	query, args, err := queryBuilder.
 		Update(serviceTable).
 		Set("name", dto.Name).
 		Set("is_active", dto.IsActive).
 		Set("host", dto.Host).
-		Where(squirrel.Eq{"id": dto.ID}).
+		Where(squirrel.Eq{"id": id}).
 		Suffix("RETURNING *").
 		ToSql()
 	if err != nil {

@@ -23,7 +23,8 @@ func (r *repository) getRouteByPath(ctx context.Context, path string) (*Route, e
 	query, args, err := queryBuilder.
 		Select(
 			"s.host AS host",
-			"r.path AS path",
+			"r.public_path AS public_path",
+			"r.service_path AS service_path",
 			"r.method AS method",
 			"r.scheme AS scheme",
 			"r.roles AS roles",
@@ -52,7 +53,8 @@ func (r *repository) getActiveRoutes(ctx context.Context) ([]*Route, error) {
 	query, args, err := queryBuilder.
 		Select(
 			"s.host AS host",
-			"r.path AS path",
+			"r.public_path AS public_path",
+			"r.service_path AS service_path",
 			"r.method AS method",
 			"r.scheme AS scheme",
 			"r.roles AS roles",
