@@ -12,6 +12,53 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Resource defines model for Resource.
+type Resource struct {
+	CheckAccessToken *bool      `json:"check_access_token,omitempty"`
+	CheckRoles       *bool      `json:"check_roles,omitempty"`
+	CreatedAt        *time.Time `json:"created_at,omitempty"`
+	DeletedAt        *time.Time `json:"deleted_at"`
+	Id               *int       `json:"id,omitempty"`
+	IsActive         *bool      `json:"is_active,omitempty"`
+	Method           *string    `json:"method,omitempty"`
+	PublicPath       *string    `json:"public_path,omitempty"`
+	Roles            *[]string  `json:"roles,omitempty"`
+	Scheme           *string    `json:"scheme,omitempty"`
+	ServiceId        *int       `json:"service_id,omitempty"`
+	ServicePath      *string    `json:"service_path,omitempty"`
+	UpdatedAt        *time.Time `json:"updated_at,omitempty"`
+}
+
+// ResourceCreate defines model for ResourceCreate.
+type ResourceCreate struct {
+	// CheckAccessToken Whether to check access token
+	CheckAccessToken bool `json:"CheckAccessToken"`
+
+	// CheckRoles Whether to check roles
+	CheckRoles bool `json:"CheckRoles"`
+
+	// IsActive Is the resource active
+	IsActive bool `json:"IsActive"`
+
+	// Method HTTP method (GET, POST, etc.)
+	Method string `json:"Method"`
+
+	// PublicPath Public path of the resource
+	PublicPath string `json:"PublicPath"`
+
+	// Roles List of roles allowed to access this resource
+	Roles []string `json:"Roles"`
+
+	// Scheme URI scheme (http, https)
+	Scheme string `json:"Scheme"`
+
+	// ServiceID ID of the service
+	ServiceID int `json:"ServiceID"`
+
+	// ServicePath Service internal path
+	ServicePath string `json:"ServicePath"`
+}
+
 // Service defines model for Service.
 type Service struct {
 	CreatedAt time.Time  `json:"createdAt"`
@@ -29,6 +76,12 @@ type CreateServiceResponse struct {
 	Id *int `json:"id,omitempty"`
 }
 
+// CreatedIdResponse defines model for CreatedIdResponse.
+type CreatedIdResponse struct {
+	// Id The ID of the created resource
+	Id *int `json:"id,omitempty"`
+}
+
 // GetServiceResponse defines model for GetServiceResponse.
 type GetServiceResponse = Service
 
@@ -39,28 +92,46 @@ type PostServiceJSONBody struct {
 	Name     string `json:"name"`
 }
 
-// PutServiceJSONBody defines parameters for PutService.
-type PutServiceJSONBody struct {
+// PutServiceIdJSONBody defines parameters for PutServiceId.
+type PutServiceIdJSONBody struct {
 	Host     string `json:"host"`
 	Id       int    `json:"id"`
 	IsActive bool   `json:"isActive"`
 	Name     string `json:"name"`
 }
 
+// PostResourceJSONRequestBody defines body for PostResource for application/json ContentType.
+type PostResourceJSONRequestBody = ResourceCreate
+
+// PutResourceIdJSONRequestBody defines body for PutResourceId for application/json ContentType.
+type PutResourceIdJSONRequestBody = ResourceCreate
+
 // PostServiceJSONRequestBody defines body for PostService for application/json ContentType.
 type PostServiceJSONRequestBody PostServiceJSONBody
 
-// PutServiceJSONRequestBody defines body for PutService for application/json ContentType.
-type PutServiceJSONRequestBody PutServiceJSONBody
+// PutServiceIdJSONRequestBody defines body for PutServiceId for application/json ContentType.
+type PutServiceIdJSONRequestBody PutServiceIdJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Create a new resource
+	// (POST /resource)
+	PostResource(w http.ResponseWriter, r *http.Request)
+	// Delete a resource by id
+	// (DELETE /resource/{id})
+	DeleteResourceId(w http.ResponseWriter, r *http.Request, id int)
+	// Get a resource by id
+	// (GET /resource/{id})
+	GetResourceId(w http.ResponseWriter, r *http.Request, id int)
+	// Update a new resource
+	// (PUT /resource/{id})
+	PutResourceId(w http.ResponseWriter, r *http.Request, id int)
+	// Get a list of roles
+	// (GET /roles)
+	GetRoles(w http.ResponseWriter, r *http.Request)
 	// Create a new service
 	// (POST /service)
 	PostService(w http.ResponseWriter, r *http.Request)
-	// Update a service
-	// (PUT /service)
-	PutService(w http.ResponseWriter, r *http.Request)
 	// Get a service by name
 	// (GET /service/name/{name})
 	GetServiceNameName(w http.ResponseWriter, r *http.Request, name string)
@@ -70,21 +141,48 @@ type ServerInterface interface {
 	// Get a service by id
 	// (GET /service/{id})
 	GetServiceId(w http.ResponseWriter, r *http.Request, id int)
+	// Update a service
+	// (PUT /service/{id})
+	PutServiceId(w http.ResponseWriter, r *http.Request, id int)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
 
-// Create a new service
-// (POST /service)
-func (_ Unimplemented) PostService(w http.ResponseWriter, r *http.Request) {
+// Create a new resource
+// (POST /resource)
+func (_ Unimplemented) PostResource(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Update a service
-// (PUT /service)
-func (_ Unimplemented) PutService(w http.ResponseWriter, r *http.Request) {
+// Delete a resource by id
+// (DELETE /resource/{id})
+func (_ Unimplemented) DeleteResourceId(w http.ResponseWriter, r *http.Request, id int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a resource by id
+// (GET /resource/{id})
+func (_ Unimplemented) GetResourceId(w http.ResponseWriter, r *http.Request, id int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update a new resource
+// (PUT /resource/{id})
+func (_ Unimplemented) PutResourceId(w http.ResponseWriter, r *http.Request, id int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a list of roles
+// (GET /roles)
+func (_ Unimplemented) GetRoles(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a new service
+// (POST /service)
+func (_ Unimplemented) PostService(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -106,6 +204,12 @@ func (_ Unimplemented) GetServiceId(w http.ResponseWriter, r *http.Request, id i
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Update a service
+// (PUT /service/{id})
+func (_ Unimplemented) PutServiceId(w http.ResponseWriter, r *http.Request, id int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler            ServerInterface
@@ -115,11 +219,11 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// PostService operation middleware
-func (siw *ServerInterfaceWrapper) PostService(w http.ResponseWriter, r *http.Request) {
+// PostResource operation middleware
+func (siw *ServerInterfaceWrapper) PostResource(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PostService(w, r)
+		siw.Handler.PostResource(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -129,11 +233,100 @@ func (siw *ServerInterfaceWrapper) PostService(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
-// PutService operation middleware
-func (siw *ServerInterfaceWrapper) PutService(w http.ResponseWriter, r *http.Request) {
+// DeleteResourceId operation middleware
+func (siw *ServerInterfaceWrapper) DeleteResourceId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PutService(w, r)
+		siw.Handler.DeleteResourceId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetResourceId operation middleware
+func (siw *ServerInterfaceWrapper) GetResourceId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetResourceId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutResourceId operation middleware
+func (siw *ServerInterfaceWrapper) PutResourceId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutResourceId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRoles operation middleware
+func (siw *ServerInterfaceWrapper) GetRoles(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRoles(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostService operation middleware
+func (siw *ServerInterfaceWrapper) PostService(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostService(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -209,6 +402,31 @@ func (siw *ServerInterfaceWrapper) GetServiceId(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetServiceId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutServiceId operation middleware
+func (siw *ServerInterfaceWrapper) PutServiceId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutServiceId(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -332,10 +550,22 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/service", wrapper.PostService)
+		r.Post(options.BaseURL+"/resource", wrapper.PostResource)
 	})
 	r.Group(func(r chi.Router) {
-		r.Put(options.BaseURL+"/service", wrapper.PutService)
+		r.Delete(options.BaseURL+"/resource/{id}", wrapper.DeleteResourceId)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/resource/{id}", wrapper.GetResourceId)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/resource/{id}", wrapper.PutResourceId)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/roles", wrapper.GetRoles)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/service", wrapper.PostService)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/service/name/{name}", wrapper.GetServiceNameName)
@@ -345,6 +575,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/service/{id}", wrapper.GetServiceId)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/service/{id}", wrapper.PutServiceId)
 	})
 
 	return r

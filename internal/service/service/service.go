@@ -25,8 +25,8 @@ func (s *Service) CreateService(ctx context.Context, dto *ServiceDTO) (*ServiceE
 	return srv, nil
 }
 
-func (s *Service) UpdateService(ctx context.Context, dto *ServiceDTO) (*ServiceEntity, error) {
-	srv, err := s.repo.updateService(ctx, dto)
+func (s *Service) UpdateService(ctx context.Context, dto *ServiceDTO, id int64) (*ServiceEntity, error) {
+	srv, err := s.repo.updateService(ctx, dto, id)
 	if err != nil {
 		return nil, pgutils.MapPostgresError("failed to update service", err)
 	}

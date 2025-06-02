@@ -15,6 +15,10 @@ create table if not exists resource (
     deleted_at timestamp
 );
 
+create unique index unique_active_resource
+    on resource(service_id, public_path, method)
+    where deleted_at is null;
+
 -- +goose Down
 drop table if exists resource;
 

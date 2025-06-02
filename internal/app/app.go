@@ -176,8 +176,8 @@ func (a *App) initService(_ context.Context) error {
 		return err
 	}
 
-	a.resourceService = resourceService.NewService(a.dBPool)
 	a.serviceService = serviceService.NewService(a.dBPool)
+	a.resourceService = resourceService.NewService(a.dBPool, a.serviceService, a.userService)
 	a.routeService = route.NewService(a.dBPool, a.redisClient)
 	a.authService = auth.NewService(a.jwtService, a.redisClient, a.userService, a.cfg.AccessTokenTTL, a.cfg.RefreshTokenTTL)
 
@@ -186,7 +186,7 @@ func (a *App) initService(_ context.Context) error {
 
 func (a *App) initAPIHandler(_ context.Context) error {
 	a.authAPIHandler = pkgAuth.NewAPIHandler(a.authService)
-	a.resourceAPIHandler = resource.NewAPIHandler(a.serviceService)
+	a.resourceAPIHandler = resource.NewAPIHandler(a.serviceService, a.resourceService, a.userService)
 	return nil
 }
 

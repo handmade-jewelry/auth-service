@@ -35,22 +35,33 @@ func NewService(opts *config.GRPCOptions) (*Service, error) {
 	}, nil
 }
 
-func (u *Service) UserRoles(ctx context.Context, userID int64) ([]string, error) {
+func (s *Service) UserRoles(ctx context.Context, userID int64) ([]string, error) {
 	//todo stub
 	return []string{"CUSTOMER"}, nil
 }
 
-func (u *Service) RoleList(ctx context.Context) ([]string, error) {
+func (s *Service) RoleMap(ctx context.Context) (map[string]string, error) {
 	//todo stub
-	return []string{"CUSTOMER", "ADMIN", "SELLER"}, nil
+	return map[string]string{
+		"CUSTOMER": "CUSTOMER",
+		"ADMIN":    "ADMIN",
+		"SELLER":   "SELLER",
+	}, nil
 }
 
-func (u *Service) CheckRoles(ctx context.Context, roles []string) ([]string, error) {
+func (s *Service) RoleList(ctx context.Context) ([]string, error) {
+	//todo stub
+	//todo get from cashe
+	return []string{"CUSTOMER", "ADMIN", "SELLER"}, nil
+	//todo set from cashe
+}
+
+func (s *Service) CheckRoles(ctx context.Context, roles []string) ([]string, error) {
 	//todo stub
 	return roles, nil
 }
 
-func (u *Service) Login(ctx context.Context, email, password string) (*UserWithRoles, error) {
+func (s *Service) Login(ctx context.Context, email, password string) (*UserWithRoles, error) {
 	//todo stub
 	return &UserWithRoles{
 		UserID: 1,
@@ -58,6 +69,6 @@ func (u *Service) Login(ctx context.Context, email, password string) (*UserWithR
 	}, nil
 }
 
-func (u *Service) Logout(ctx context.Context) {
+func (s *Service) Logout(ctx context.Context) {
 	//todo stub
 }
