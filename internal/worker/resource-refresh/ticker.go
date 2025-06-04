@@ -28,19 +28,19 @@ func NewTiker(routeService *route.Service, mode string) *Ticker {
 	}
 }
 
-func (t *Ticker) Run(ctx context.Context, interval time.Duration, ttl time.Duration) {
+func (t *Ticker) Run(ctx context.Context, interval time.Duration) {
 	if t.mode == disabledMode {
 		return
 	}
 
-	t.run(ctx, ttl)
+	t.run(ctx)
 
 	ticker := time.NewTicker(interval)
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
-				t.run(ctx, ttl)
+				t.run(ctx)
 			case <-ctx.Done():
 				log.Println("Stop resource refresh ticker")
 				ticker.Stop()
@@ -49,8 +49,8 @@ func (t *Ticker) Run(ctx context.Context, interval time.Duration, ttl time.Durat
 	}()
 }
 
-func (t *Ticker) run(ctx context.Context, ttl time.Duration) {
-	err := t.routeService.RefreshCacheRoutes(ctx, ttl)
+func (t *Ticker) run(ctx context.Context) {
+	err := t.routeService.RefreshCacheRoutes(ctx)
 	if err != nil {
 		logger.Error("failed to refresh cached routes", err)
 	}

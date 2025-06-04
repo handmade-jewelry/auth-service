@@ -2,7 +2,7 @@
 create table if not exists resource (
     id serial primary key,
     service_id int not null,
-    public_path text not null,
+    public_path text not null unique,
     service_path text not null,
     is_active bool default false,
     roles jsonb,
