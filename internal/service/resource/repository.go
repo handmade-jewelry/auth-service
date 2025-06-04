@@ -107,19 +107,25 @@ func (r *repository) resource(ctx context.Context, id int64) (*Resource, error) 
 	return &resource, nil
 }
 
-func (r *repository) deleteResource(ctx context.Context, id int64) error {
+func (r *repository) deleteResource(ctx context.Context, id int64) (*Resource, error) {
 	query, args, err := queryBuilder.
 		Update(resourceTable).
 		Set("deleted_at", squirrel.Expr("CURRENT_TIMESTAMP")).
 		Set("is_active", false).
 		Where(squirrel.Eq{"id": id}).
+		Suffix("RETURNING *").
 		ToSql()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = r.dbPool.Exec(ctx, query, args...)
-	return err
+	var resource Resource
+	err = pgxscan.Get(ctx, r.dbPool, &resource, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resource, nil
 }
 
 func (r *repository) resourceByPublicPath(ctx context.Context, publicPath string) (*Resource, error) {

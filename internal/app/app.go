@@ -176,9 +176,9 @@ func (a *App) initService(_ context.Context) error {
 		return err
 	}
 
-	a.serviceService = serviceService.NewService(a.dBPool)
-	a.resourceService = resourceService.NewService(a.dBPool, a.serviceService, a.userService)
-	a.routeService = route.NewService(a.dBPool, a.redisClient)
+	a.routeService = route.NewService(a.dBPool, a.redisClient, a.cfg.RefreshResourceTTL)
+	a.serviceService = serviceService.NewService(a.dBPool, a.routeService)
+	a.resourceService = resourceService.NewService(a.dBPool, a.serviceService, a.userService, a.routeService)
 	a.authService = auth.NewService(a.jwtService, a.redisClient, a.userService, a.cfg.AccessTokenTTL, a.cfg.RefreshTokenTTL)
 
 	return nil
@@ -261,5 +261,5 @@ func (a *App) initWorker(_ context.Context) error {
 }
 
 func (a *App) runWorker(ctx context.Context) {
-	a.refreshResourceTicker.Run(ctx, a.cfg.RefreshResourceInterval, a.cfg.RefreshResourceTTL)
+	a.refreshResourceTicker.Run(ctx, a.cfg.RefreshResourceInterval)
 }

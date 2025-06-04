@@ -40,6 +40,10 @@ func (a *AuthMiddleware) checkAuth(ctx context.Context, req *http.Request) (*rou
 		logger.Error("token is expired", err)
 		return nil, fmt.Errorf("token is expired: %w", err)
 	}
+	//todo надо ли обнулить куки в таком кейсе?
+
+	//todo обновлять access token прямо в middleware, как только он протух
+	//drop refresh-token handler
 
 	if !route.CheckRoles {
 		return route, nil
