@@ -201,7 +201,7 @@ func (a *App) initCache(_ context.Context) error {
 }
 
 func (a *App) initMiddleware(_ context.Context) error {
-	a.authMiddleware = proxy.NewAuthMiddleware(a.userService, a.routeService, a.jwtService)
+	a.authMiddleware = proxy.NewAuthMiddleware(a.routeService, a.jwtService)
 	return nil
 }
 
