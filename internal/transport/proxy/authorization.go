@@ -2,22 +2,21 @@ package proxy
 
 import (
 	"context"
-	"fmt"
-	"github.com/handmade-jewelry/auth-service/internal/utils/cookie"
-	"github.com/handmade-jewelry/auth-service/logger"
 	"net/http"
 
+	"github.com/handmade-jewelry/auth-service/errors"
 	routeService "github.com/handmade-jewelry/auth-service/internal/service/route"
+	"github.com/handmade-jewelry/auth-service/internal/utils/cookie"
+	"github.com/handmade-jewelry/auth-service/logger"
 )
 
-// todo errors
-func (a *AuthMiddleware) checkAuth(ctx context.Context, req *http.Request) (*routeService.Route, error) {
+func (a *AuthMiddleware) checkAuth(ctx context.Context, req *http.Request) (*routeService.Route, *errors.ErrorResponse) {
 	path := req.URL.Path
 
 	route, err := a.routeService.GetRouteByPath(ctx, path)
 	if err != nil {
 		logger.ErrorWithFields("failed to get route", err, "path", path)
-		return nil, fmt.Errorf("failed to get route: %w", err)
+		return nil, errors.NotFoundError("Resource not found")
 	}
 
 	if !route.CheckAccessToken {
@@ -26,35 +25,27 @@ func (a *AuthMiddleware) checkAuth(ctx context.Context, req *http.Request) (*rou
 
 	token, err := cookie.GetCookie(req, cookie.AccessTokenName)
 	if err != nil {
-		logger.Error("failed to get access token from cookie", err)
-		return nil, fmt.Errorf("failed to get cookie: %w", err)
+		logger.ErrorWithFields("failed to get access token from cookie", err, "path", path)
+		return nil, errors.UnauthorizedError()
 	}
 
 	claims, err := a.jwtService.ParseAccessToken(token)
 	if err != nil {
 		logger.Error("failed to parse token", err)
-		return nil, fmt.Errorf("invalid token: %w", err)
+		return nil, errors.UnauthorizedError()
 	}
 
 	if claims.IsExpired() {
-		logger.Error("token is expired", err)
-		return nil, fmt.Errorf("token is expired: %w", err)
+		return nil, errors.UnauthorizedError()
 	}
-	//todo надо ли обнулить куки в таком кейсе?
-
-	//todo обновлять access token прямо в middleware, как только он протух
-	//drop refresh-token handler
 
 	if !route.CheckRoles {
 		return route, nil
 	}
 
-	//todo
-	//сверять список ролей с закешированным чтобы проверить что все роли валидные
-
 	if !a.checkRoles(route.Roles, claims.Roles) {
 		logger.Error("roles is mismatched", err)
-		return nil, fmt.Errorf("access denied: %w", err)
+		return nil, errors.UnauthorizedError()
 	}
 
 	return route, nil

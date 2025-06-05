@@ -30,9 +30,9 @@ func NewService(dbPool *pgxpool.Pool, redisClient *cache.RedisClient, routeTTL t
 	}
 }
 
-func (s *Service) GetRouteByPath(ctx context.Context, path string) (*Route, error) {
+func (s *Service) GetRouteByPath(ctx context.Context, publicPath string) (*Route, error) {
 	var route *Route
-	val, err := s.redisClient.GetBytes(ctx, serviceRoutePrefix+path)
+	val, err := s.redisClient.GetBytes(ctx, serviceRoutePrefix+publicPath)
 	if err == nil {
 		err = json.Unmarshal(val, &route)
 		if err == nil {
@@ -40,9 +40,9 @@ func (s *Service) GetRouteByPath(ctx context.Context, path string) (*Route, erro
 		}
 	}
 
-	logger.ErrorWithFields("failed to unmarshal route from cache", err, "path", path)
+	logger.ErrorWithFields("failed to unmarshal route from cache", err, "public_path", publicPath)
 
-	route, err = s.repo.getRouteByPath(ctx, path)
+	route, err = s.repo.getRouteByPath(ctx, publicPath)
 	if err != nil {
 		return nil, pgutils.MapPostgresError("failed to get route", err)
 	}

@@ -56,19 +56,10 @@ func (s *Service) RoleList(ctx context.Context) ([]string, error) {
 	//todo set from cashe
 }
 
-func (s *Service) CheckRoles(ctx context.Context, roles []string) ([]string, error) {
-	//todo stub
-	return roles, nil
-}
-
 func (s *Service) Login(ctx context.Context, email, password string) (*UserWithRoles, error) {
 	//todo stub
 	return &UserWithRoles{
 		UserID: 1,
 		Roles:  []string{"CUSTOMER"},
 	}, nil
-}
-
-func (s *Service) Logout(ctx context.Context) {
-	//todo stub
 }
