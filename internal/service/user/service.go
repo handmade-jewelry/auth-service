@@ -2,14 +2,15 @@ package user
 
 import (
 	"context"
-	"github.com/handmade-jewelry/auth-service/logger"
-	"google.golang.org/protobuf/types/known/emptypb"
 
 	grpcRetry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/handmade-jewelry/auth-service/internal/config"
+	"github.com/handmade-jewelry/auth-service/internal/utils/errors"
+	"github.com/handmade-jewelry/auth-service/internal/utils/logger"
 	userService "github.com/handmade-jewelry/user-service/pkg/api/user-service"
 )
 
@@ -52,9 +53,6 @@ func (s *Service) UserRoles(ctx context.Context, userID int64) ([]string, error)
 	}
 
 	return roles, nil
-
-	//todo stub
-	//return []string{"CUSTOMER"}, nil
 }
 
 func (s *Service) RoleMap(ctx context.Context) (map[string]struct{}, error) {
@@ -70,19 +68,13 @@ func (s *Service) RoleMap(ctx context.Context) (map[string]struct{}, error) {
 	}
 
 	return roles, nil
-
-	//todo stub
-	//return map[string]struct{}{
-	//	"CUSTOMER": {},
-	//	"ADMIN":    {},
-	//	"SELLER":   {},
-	//}, nil
 }
 
-func (s *Service) RoleList(ctx context.Context) ([]string, error) {
+func (s *Service) RoleList(ctx context.Context) ([]string, *errors.HTTPError) {
 	res, err := s.client.ListRoles(ctx, &emptypb.Empty{})
 	if err != nil {
-		return nil, err
+		logger.Error("failed to get role list", err)
+		return nil, errors.InternalError()
 	}
 
 	roles := make([]string, 0, len(res.GetRoles()))
@@ -91,9 +83,6 @@ func (s *Service) RoleList(ctx context.Context) ([]string, error) {
 	}
 
 	return roles, nil
-
-	//todo stub
-	//return []string{"CUSTOMER", "ADMIN", "SELLER"}, nil
 }
 
 func (s *Service) Login(ctx context.Context, email, password string) (*UserWithRoles, error) {
@@ -114,10 +103,4 @@ func (s *Service) Login(ctx context.Context, email, password string) (*UserWithR
 		UserID: res.GetUserId(),
 		Roles:  roles,
 	}, nil
-
-	//todo stub
-	//return &UserWithRoles{
-	//	UserID: 1,
-	//	Roles:  []string{"CUSTOMER"},
-	//}, nil
 }

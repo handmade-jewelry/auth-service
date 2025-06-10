@@ -2,15 +2,16 @@ package proxy
 
 import (
 	"context"
+
 	"net/http"
 
-	"github.com/handmade-jewelry/auth-service/errors"
 	routeService "github.com/handmade-jewelry/auth-service/internal/service/route"
 	"github.com/handmade-jewelry/auth-service/internal/utils/cookie"
-	"github.com/handmade-jewelry/auth-service/logger"
+	"github.com/handmade-jewelry/auth-service/internal/utils/errors"
+	"github.com/handmade-jewelry/auth-service/internal/utils/logger"
 )
 
-func (a *AuthMiddleware) checkAuth(ctx context.Context, req *http.Request) (*routeService.Route, *errors.ErrorResponse) {
+func (a *AuthMiddleware) checkAuth(ctx context.Context, req *http.Request) (*routeService.Route, *errors.HTTPError) {
 	path := req.URL.Path
 
 	route, err := a.routeService.GetRouteByPath(ctx, path)

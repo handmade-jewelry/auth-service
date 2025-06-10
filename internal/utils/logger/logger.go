@@ -45,6 +45,3 @@ func ErrorWithFields(msg string, err error, kvs ...interface{}) {
 func Fatal(msg string, err error) {
 	log.Fatal(msg, zap.Error(err))
 }
-
-type Field struct {
-}

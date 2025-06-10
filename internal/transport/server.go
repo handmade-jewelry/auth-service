@@ -1,15 +1,17 @@
 package transport
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
+	httpSwagger "github.com/swaggo/http-swagger"
+
 	"github.com/handmade-jewelry/auth-service/internal/transport/auth"
 	"github.com/handmade-jewelry/auth-service/internal/transport/proxy"
 	"github.com/handmade-jewelry/auth-service/internal/transport/resource"
-	"github.com/handmade-jewelry/auth-service/logger"
+	"github.com/handmade-jewelry/auth-service/internal/utils/logger"
 	pkgAuth "github.com/handmade-jewelry/auth-service/pkg/api/auth"
 	pkgResource "github.com/handmade-jewelry/auth-service/pkg/api/resource"
-	httpSwagger "github.com/swaggo/http-swagger"
-	"net/http"
 )
 
 type SwaggerConfig struct {

@@ -2,28 +2,32 @@ package resource
 
 import (
 	"encoding/json"
-	"github.com/handmade-jewelry/auth-service/internal/service/service"
 	"net/http"
+
+	"github.com/handmade-jewelry/auth-service/internal/service/service"
+	"github.com/handmade-jewelry/auth-service/internal/utils/errors"
+	"github.com/handmade-jewelry/auth-service/internal/utils/logger"
 )
 
-func (a *APIHandler) PostService(w http.ResponseWriter, r *http.Request) {
+func (a *APIHandler) PostService(rw http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var dto service.ServiceDTO
 	err := json.NewDecoder(r.Body).Decode(&dto)
 	if err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		errors.WriteHTTPError(rw, errors.BadRequestError("Invalid request body"))
+
 		return
 	}
 
 	if dto.Name == "" || dto.Host == "" {
-		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		errors.WriteHTTPError(rw, errors.BadRequestError("Missing required fields"))
 		return
 	}
 
-	srv, err := a.serviceService.CreateService(r.Context(), &dto)
-	if err != nil {
-		http.Error(w, "Failed to create service", http.StatusInternalServerError)
+	srv, httpErr := a.serviceService.CreateService(r.Context(), &dto)
+	if httpErr != nil {
+		errors.WriteHTTPError(rw, httpErr)
 		return
 	}
 
@@ -33,10 +37,11 @@ func (a *APIHandler) PostService(w http.ResponseWriter, r *http.Request) {
 		ID: srv.ID,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if err = json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusCreated)
+	if err = json.NewEncoder(rw).Encode(response); err != nil {
+		logger.Error("failed to encode response", err)
+		errors.WriteHTTPError(rw, errors.InternalError())
 		return
 	}
 }

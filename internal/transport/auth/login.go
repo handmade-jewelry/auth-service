@@ -1,14 +1,17 @@
 package auth
 
 import (
-	"encoding/json"
-	"github.com/handmade-jewelry/auth-service/internal/utils/cookie"
-	"github.com/handmade-jewelry/auth-service/logger"
-	"net/http"
 	"time"
+
+	"encoding/json"
+	"net/http"
+
+	"github.com/handmade-jewelry/auth-service/internal/utils/cookie"
+	"github.com/handmade-jewelry/auth-service/internal/utils/errors"
+	"github.com/handmade-jewelry/auth-service/internal/utils/logger"
 )
 
-func (a *APIHandler) PostLogin(wr http.ResponseWriter, req *http.Request) {
+func (a *APIHandler) PostLogin(rw http.ResponseWriter, req *http.Request) {
 	type loginRequest struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -17,12 +20,12 @@ func (a *APIHandler) PostLogin(wr http.ResponseWriter, req *http.Request) {
 	var data loginRequest
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
-		http.Error(wr, "Invalid request body", http.StatusBadRequest)
+		errors.WriteHTTPError(rw, errors.BadRequestError("Invalid request body"))
 		return
 	}
 
 	if data.Email == "" || data.Password == "" {
-		http.Error(wr, "Invalid email or password", http.StatusBadRequest)
+		http.Error(rw, "Invalid email or password", http.StatusBadRequest)
 		return
 	}
 
@@ -33,12 +36,13 @@ func (a *APIHandler) PostLogin(wr http.ResponseWriter, req *http.Request) {
 			err,
 			"email", data.Email,
 			"password", data.Password)
-		http.Error(wr, "Unauthorized", http.StatusUnauthorized)
+
+		errors.WriteHTTPError(rw, errors.UnauthorizedError())
 		return
 	}
 
 	now := time.Now()
-	http.SetCookie(wr, &http.Cookie{
+	http.SetCookie(rw, &http.Cookie{
 		Name:     cookie.RefreshTokenName,
 		Value:    authTokens.RefreshToken,
 		Path:     "/",
@@ -48,7 +52,7 @@ func (a *APIHandler) PostLogin(wr http.ResponseWriter, req *http.Request) {
 		Expires:  now.Add(authTokens.RefreshTTL),
 	})
 
-	http.SetCookie(wr, &http.Cookie{
+	http.SetCookie(rw, &http.Cookie{
 		Name:     cookie.AccessTokenName,
 		Value:    authTokens.AccessToken,
 		Path:     "/",
@@ -58,5 +62,5 @@ func (a *APIHandler) PostLogin(wr http.ResponseWriter, req *http.Request) {
 		Expires:  now.Add(authTokens.AccessTTL),
 	})
 
-	wr.WriteHeader(http.StatusOK)
+	rw.WriteHeader(http.StatusOK)
 }

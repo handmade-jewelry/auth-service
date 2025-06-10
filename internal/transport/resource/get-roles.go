@@ -3,18 +3,23 @@ package resource
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/handmade-jewelry/auth-service/internal/utils/errors"
+	"github.com/handmade-jewelry/auth-service/internal/utils/logger"
 )
 
-func (a *APIHandler) GetRoles(w http.ResponseWriter, r *http.Request) {
-	roles, err := a.userService.RoleList(r.Context())
-	if err != nil {
-		http.Error(w, "Failed to get roles", http.StatusNotFound)
+func (a *APIHandler) GetRoles(rw http.ResponseWriter, req *http.Request) {
+	roles, httpErr := a.userService.RoleList(req.Context())
+	if httpErr != nil {
+		errors.WriteHTTPError(rw, httpErr)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err = json.NewEncoder(w).Encode(roles); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(rw).Encode(roles); err != nil {
+		logger.Error("failed to encode response", err)
+		errors.WriteHTTPError(rw, errors.InternalError())
+		return
 	}
 }

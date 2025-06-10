@@ -2,10 +2,13 @@ package service
 
 import (
 	"context"
-	"github.com/handmade-jewelry/auth-service/internal/service/route"
-	"github.com/handmade-jewelry/auth-service/libs/pgutils"
-	"github.com/handmade-jewelry/auth-service/logger"
+
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/handmade-jewelry/auth-service/internal/service/route"
+	"github.com/handmade-jewelry/auth-service/internal/utils/errors"
+	"github.com/handmade-jewelry/auth-service/internal/utils/logger"
+	"github.com/handmade-jewelry/auth-service/internal/utils/pgutils"
 )
 
 type Service struct {
@@ -20,10 +23,11 @@ func NewService(dbPool *pgxpool.Pool, routeService *route.Service) *Service {
 	}
 }
 
-func (s *Service) CreateService(ctx context.Context, dto *ServiceDTO) (*ServiceEntity, error) {
+func (s *Service) CreateService(ctx context.Context, dto *ServiceDTO) (*ServiceEntity, *errors.HTTPError) {
 	srv, err := s.repo.createService(ctx, dto)
 	if err != nil {
-		return nil, pgutils.MapPostgresError("failed to create service", err)
+		logger.Error("failed to create service", err)
+		return nil, pgutils.MapPostgresError("service", err)
 	}
 
 	err = s.routeService.RefreshCacheRoutes(ctx)
@@ -34,10 +38,10 @@ func (s *Service) CreateService(ctx context.Context, dto *ServiceDTO) (*ServiceE
 	return srv, nil
 }
 
-func (s *Service) UpdateService(ctx context.Context, dto *ServiceDTO, id int64) (*ServiceEntity, error) {
+func (s *Service) UpdateService(ctx context.Context, dto *ServiceDTO, id int64) (*ServiceEntity, *errors.HTTPError) {
 	srv, err := s.repo.updateService(ctx, dto, id)
 	if err != nil {
-		return nil, pgutils.MapPostgresError("failed to update service", err)
+		return nil, pgutils.MapPostgresError("service", err)
 	}
 
 	err = s.routeService.RefreshCacheRoutes(ctx)
@@ -48,10 +52,11 @@ func (s *Service) UpdateService(ctx context.Context, dto *ServiceDTO, id int64) 
 	return srv, nil
 }
 
-func (s *Service) DeleteService(ctx context.Context, id int64) error {
+func (s *Service) DeleteService(ctx context.Context, id int64) *errors.HTTPError {
 	err := s.repo.deleteService(ctx, id)
 	if err != nil {
-		return pgutils.MapPostgresError("failed to delete service", err)
+		logger.ErrorWithFields("failed to delete service", err, "id", id)
+		return pgutils.MapPostgresError("service", err)
 	}
 
 	err = s.routeService.RefreshCacheRoutes(ctx)
@@ -62,19 +67,21 @@ func (s *Service) DeleteService(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (s *Service) ServiceByID(ctx context.Context, id int64) (*ServiceEntity, error) {
+func (s *Service) ServiceByID(ctx context.Context, id int64) (*ServiceEntity, *errors.HTTPError) {
 	srv, err := s.repo.serviceByID(ctx, id)
 	if err != nil {
-		return nil, pgutils.MapPostgresError("failed to get service by id", err)
+		logger.ErrorWithFields("failed to get service by id", err, "service_id", id)
+		return nil, pgutils.MapPostgresError("service", err)
 	}
 
 	return srv, nil
 }
 
-func (s *Service) ServiceByName(ctx context.Context, name string) (*ServiceEntity, error) {
+func (s *Service) ServiceByName(ctx context.Context, name string) (*ServiceEntity, *errors.HTTPError) {
 	srv, err := s.repo.serviceByName(ctx, name)
 	if err != nil {
-		return nil, pgutils.MapPostgresError("failed to get service by name", err)
+		logger.ErrorWithFields("failed to get service by name", err, "service_name", name)
+		return nil, pgutils.MapPostgresError("service", err)
 	}
 
 	return srv, nil

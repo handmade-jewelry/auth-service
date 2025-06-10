@@ -2,16 +2,15 @@ package resource_refresh
 
 import (
 	"context"
-	"github.com/handmade-jewelry/auth-service/logger"
 	"log"
 	"time"
 
 	"github.com/handmade-jewelry/auth-service/internal/cache"
 	"github.com/handmade-jewelry/auth-service/internal/service/route"
+	"github.com/handmade-jewelry/auth-service/internal/utils/logger"
 )
 
 const (
-	enabledMode  = "ENABLED"
 	disabledMode = "DISABLED"
 )
 

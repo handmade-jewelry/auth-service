@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/handmade-jewelry/auth-service/logger"
+	"github.com/handmade-jewelry/auth-service/internal/utils/logger"
+	"github.com/handmade-jewelry/auth-service/internal/utils/pgutils"
 	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/handmade-jewelry/auth-service/internal/cache"
-	"github.com/handmade-jewelry/auth-service/libs/pgutils"
 )
 
 const serviceRoutePrefix = "service_route:"

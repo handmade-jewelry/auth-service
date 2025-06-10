@@ -1,28 +1,32 @@
 package auth
 
 import (
-	"github.com/handmade-jewelry/auth-service/internal/utils/cookie"
-	"github.com/handmade-jewelry/auth-service/logger"
-	"net/http"
 	"time"
+
+	"net/http"
+
+	"github.com/handmade-jewelry/auth-service/internal/utils/cookie"
+	"github.com/handmade-jewelry/auth-service/internal/utils/errors"
+	"github.com/handmade-jewelry/auth-service/internal/utils/logger"
 )
 
-func (a *APIHandler) PostLogout(wr http.ResponseWriter, req *http.Request) {
+func (a *APIHandler) PostLogout(rw http.ResponseWriter, req *http.Request) {
 	token, err := cookie.GetCookie(req, cookie.RefreshTokenName)
 	if err != nil {
-		logger.Error("failed to get refresh token cookie", err)
-		http.Error(wr, "refresh token not found", http.StatusUnauthorized)
+		logger.Error("failed to get cookie refresh token", err)
+		errors.WriteHTTPError(rw, errors.UnauthorizedError())
 		return
 	}
 
 	err = a.authService.Logout(req.Context(), token)
 	if err != nil {
-		http.Error(wr, "", http.StatusUnauthorized)
+		logger.Error("failed to logout", err)
+		errors.WriteHTTPError(rw, errors.UnauthorizedError())
 		return
 	}
 
 	expired := time.Now().Add(-time.Hour)
-	http.SetCookie(wr, &http.Cookie{
+	http.SetCookie(rw, &http.Cookie{
 		Name:     cookie.RefreshTokenName,
 		Value:    "",
 		Path:     "/",
@@ -32,7 +36,7 @@ func (a *APIHandler) PostLogout(wr http.ResponseWriter, req *http.Request) {
 		Expires:  expired,
 		MaxAge:   -1,
 	})
-	http.SetCookie(wr, &http.Cookie{
+	http.SetCookie(rw, &http.Cookie{
 		Name:     cookie.AccessTokenName,
 		Value:    "",
 		Path:     "/",
@@ -43,5 +47,5 @@ func (a *APIHandler) PostLogout(wr http.ResponseWriter, req *http.Request) {
 		MaxAge:   -1,
 	})
 
-	wr.WriteHeader(http.StatusOK)
+	rw.WriteHeader(http.StatusOK)
 }

@@ -2,28 +2,31 @@ package resource
 
 import (
 	"encoding/json"
-	"github.com/handmade-jewelry/auth-service/internal/service/resource"
 	"net/http"
+
+	"github.com/handmade-jewelry/auth-service/internal/service/resource"
+	"github.com/handmade-jewelry/auth-service/internal/utils/errors"
+	"github.com/handmade-jewelry/auth-service/internal/utils/logger"
 )
 
-func (a *APIHandler) PostResource(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+func (a *APIHandler) PostResource(rw http.ResponseWriter, req *http.Request) {
+	defer req.Body.Close()
 
 	var dto resource.ResourceDTO
-	err := json.NewDecoder(r.Body).Decode(&dto)
+	err := json.NewDecoder(req.Body).Decode(&dto)
 	if err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		errors.WriteHTTPError(rw, errors.BadRequestError("Invalid request body"))
 		return
 	}
 
-	res, err := a.resourceService.CreateResource(r.Context(), dto)
-	if err != nil {
-		http.Error(w, "Failed to create resource: "+err.Error(), http.StatusInternalServerError)
+	res, httpErr := a.resourceService.CreateResource(req.Context(), dto)
+	if httpErr != nil {
+		errors.WriteHTTPError(rw, httpErr)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusCreated)
 
 	resp := struct {
 		ID int64 `json:"id"`
@@ -31,8 +34,9 @@ func (a *APIHandler) PostResource(w http.ResponseWriter, r *http.Request) {
 		ID: res.ID,
 	}
 
-	if err = json.NewEncoder(w).Encode(resp); err != nil {
-		http.Error(w, "Failed to write response: "+err.Error(), http.StatusInternalServerError)
+	if err = json.NewEncoder(rw).Encode(resp); err != nil {
+		logger.Error("failed to encode response", err)
+		errors.WriteHTTPError(rw, errors.InternalError())
 		return
 	}
 }
