@@ -1,12 +1,13 @@
 package resource
 
 import (
-	"fmt"
+	"github.com/handmade-jewelry/auth-service/internal/utils/errors"
 )
 
 var (
 	validSchemes = map[string]struct{}{
 		string(HTTPSScheme): {},
+		string(HTTPScheme):  {},
 	}
 
 	validMethods = map[string]struct{}{
@@ -17,18 +18,19 @@ var (
 	}
 )
 
-func (dto *ResourceDTO) Validate() error {
+func (dto *ResourceDTO) Validate() *errors.HTTPError {
 	if dto.PublicPath == "" {
-		return fmt.Errorf("public path cannot be empty")
+		return errors.BadRequestError("public path cannot be empty")
 	}
 	if dto.ServicePath == "" {
-		return fmt.Errorf("service path cannot be empty")
+		return errors.BadRequestError("service path cannot be empty")
 	}
 	if _, ok := validSchemes[dto.Scheme]; !ok {
-		return fmt.Errorf("invalid scheme: %s", dto.Scheme)
+		return errors.BadRequestError("invalid scheme")
 	}
 	if _, ok := validMethods[dto.Method]; !ok {
-		return fmt.Errorf("invalid method: %s", dto.Method)
+		return errors.BadRequestError("invalid scheme")
 	}
+
 	return nil
 }

@@ -2,6 +2,7 @@ package route
 
 import (
 	"context"
+
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,7 +20,7 @@ func newRepository(dbPool *pgxpool.Pool) *repository {
 	}
 }
 
-func (r *repository) getRouteByPath(ctx context.Context, path string) (*Route, error) {
+func (r *repository) getRouteByPath(ctx context.Context, publicPath string) (*Route, error) {
 	query, args, err := queryBuilder.
 		Select(
 			"s.host AS host",
@@ -35,7 +36,7 @@ func (r *repository) getRouteByPath(ctx context.Context, path string) (*Route, e
 		Join("service AS s ON s.id = r.service_id").
 		Where(
 			squirrel.And{
-				squirrel.Eq{"r.path": path},
+				squirrel.Eq{"r.public_path": publicPath},
 			},
 		).
 		ToSql()

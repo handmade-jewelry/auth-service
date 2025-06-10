@@ -3,19 +3,23 @@ package resource
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/handmade-jewelry/auth-service/internal/utils/errors"
+	"github.com/handmade-jewelry/auth-service/internal/utils/logger"
 )
 
-func (a *APIHandler) GetServiceNameName(w http.ResponseWriter, r *http.Request, name string) {
-	srv, err := a.serviceService.ServiceByName(r.Context(), name)
-	if err != nil {
-		http.Error(w, "Failed to get service", http.StatusInternalServerError)
+func (a *APIHandler) GetServiceNameName(rw http.ResponseWriter, r *http.Request, name string) {
+	srv, httpErr := a.serviceService.ServiceByName(r.Context(), name)
+	if httpErr != nil {
+		errors.WriteHTTPError(rw, httpErr)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err = json.NewEncoder(w).Encode(srv); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(rw).Encode(srv); err != nil {
+		logger.Error("failed to encode response", err)
+		errors.WriteHTTPError(rw, errors.InternalError())
 		return
 	}
 }

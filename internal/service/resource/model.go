@@ -9,7 +9,8 @@ type Method string
 const (
 	resourceTable = "resource"
 
-	HTTPSScheme = Scheme("HTTPS")
+	HTTPSScheme = Scheme("https")
+	HTTPScheme  = Scheme("http")
 
 	GetMethod    = Method("GET")
 	PostMethod   = Method("POST")

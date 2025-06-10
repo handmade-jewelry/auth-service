@@ -50,7 +50,7 @@ func (s *Service) RefreshToken(ctx context.Context, token string) (*AuthTokens, 
 	userID := claims.UserID
 	err = s.validateRefreshToken(ctx, oldTokenID, userID)
 	if err != nil {
-		return nil, fmt.Errorf("refresh token validation failed: %w", err)
+		return nil, fmt.Errorf("refresh token is not valid: %w", err)
 	}
 
 	roles, err := s.userService.UserRoles(ctx, userID)
@@ -82,7 +82,7 @@ func (s *Service) validateRefreshToken(ctx context.Context, oldTokenID string, t
 
 	userID, err := strconv.ParseInt(val, 10, 64)
 	if err != nil {
-		return fmt.Errorf("userID convert error: %w", err)
+		return fmt.Errorf("userID convert errors: %w", err)
 	}
 
 	if tokenUserID != userID {

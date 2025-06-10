@@ -442,7 +442,7 @@ type UnescapedCookieParamError struct {
 }
 
 func (e *UnescapedCookieParamError) Error() string {
-	return fmt.Sprintf("error unescaping cookie parameter '%s'", e.ParamName)
+	return fmt.Sprintf("errors unescaping cookie parameter '%s'", e.ParamName)
 }
 
 func (e *UnescapedCookieParamError) Unwrap() error {

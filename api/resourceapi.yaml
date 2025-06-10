@@ -38,7 +38,7 @@ paths:
         "400":
           description: Invalid input data
         "500":
-          description: Internal server error
+          description: Internal server errors
 
   /service/{id}:
     parameters:
@@ -127,7 +127,7 @@ paths:
         "400":
           description: Invalid input data
         "500":
-          description: Internal server error
+          description: Internal server errors
 
   /roles:
     get:
@@ -168,7 +168,7 @@ paths:
         "400":
           description: Invalid input data
         "500":
-          description: Internal server error
+          description: Internal server errors
 
     get:
       summary: Get a resource by id

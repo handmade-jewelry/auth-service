@@ -7,7 +7,7 @@ import (
 	"github.com/handmade-jewelry/auth-service/internal/service/route"
 	pkgAuth "github.com/handmade-jewelry/auth-service/internal/transport/auth"
 	"github.com/handmade-jewelry/auth-service/internal/transport/resource"
-	"github.com/handmade-jewelry/auth-service/logger"
+	"github.com/handmade-jewelry/auth-service/internal/utils/logger"
 	"strconv"
 	"time"
 
